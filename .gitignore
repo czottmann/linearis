@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Output of 'npm pack'
+*.tgz
+
+# npm cache
+.npm
+
+# IDE and editor files
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+._*

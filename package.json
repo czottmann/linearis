@@ -1,0 +1,20 @@
+{
+  "name": "zco-linear-cli",
+  "version": "1.0.0",
+  "description": "A CLI for Linear.app which outputs JSON, intended for use by LLM agents (and people who like structured data).",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [],
+  "author": "Carlo Zottmann <carlo@zottmann.dev>",
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "@linear/sdk": "^58.1.0",
+    "commander": "^14.0.0"
+  }
+}
