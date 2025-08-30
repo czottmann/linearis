@@ -317,12 +317,12 @@ export class LinearService {
       parentId: args.parentId,
     });
 
-    if (!payload.success) {
+    if (!payload.success || !payload._issue) {
       throw new Error("Failed to create issue");
     }
 
     // Fetch the created issue to return full data
-    return this.getIssueById(payload.issue.id);
+    return this.getIssueById(payload._issue.id);
   }
 
   /**
