@@ -1,7 +1,7 @@
 {
   "name": "zco-linear-cli",
   "version": "1.0.0",
-  "description": "A CLI for Linear.app which outputs JSON, intended for use by LLM agents (and people who like structured data).",
+  "description": "High-performance CLI for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and users who prefer structured data.",
   "main": "src/main.ts",
   "type": "module",
   "scripts": {
