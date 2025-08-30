@@ -93,12 +93,10 @@ export class LinearService {
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
-      labels: {
-        nodes: issue.labels.nodes.map((label: any) => ({
-          id: label.id,
-          name: label.name,
-        })),
-      },
+      labels: issue.labels.nodes.map((label: any) => ({
+        id: label.id,
+        name: label.name,
+      })),
       createdAt: new Date(issue.createdAt).toISOString(),
       updatedAt: new Date(issue.updatedAt).toISOString(),
     }));
@@ -168,12 +166,10 @@ export class LinearService {
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
-      labels: {
-        nodes: labels.nodes.map((label: any) => ({
-          id: label.id,
-          name: label.name,
-        })),
-      },
+      labels: labels.nodes.map((label: any) => ({
+        id: label.id,
+        name: label.name,
+      })),
       createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
     }));
@@ -269,29 +265,25 @@ export class LinearService {
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
-      labels: {
-        nodes: labels.nodes.map((label: any) => ({
-          id: label.id,
-          name: label.name,
-        })),
-      },
-      comments: {
-        nodes: await Promise.all(comments.nodes.map(async (comment: any) => {
-          const user = await comment.user;
-          return {
-            id: comment.id,
-            body: comment.body,
-            user: {
-              id: user.id,
-              name: user.name,
-            },
-            createdAt: comment.createdAt?.toISOString() ||
-              new Date().toISOString(),
-            updatedAt: comment.updatedAt?.toISOString() ||
-              new Date().toISOString(),
-          };
-        })),
-      },
+      labels: labels.nodes.map((label: any) => ({
+        id: label.id,
+        name: label.name,
+      })),
+      comments: await Promise.all(comments.nodes.map(async (comment: any) => {
+        const user = await comment.user;
+        return {
+          id: comment.id,
+          body: comment.body,
+          user: {
+            id: user.id,
+            name: user.name,
+          },
+          createdAt: comment.createdAt?.toISOString() ||
+            new Date().toISOString(),
+          updatedAt: comment.updatedAt?.toISOString() ||
+            new Date().toISOString(),
+        };
+      })),
       createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
     };
@@ -383,13 +375,11 @@ export class LinearService {
       description: project.description || undefined,
       state: project.state,
       progress: project.progress,
-      teams: {
-        nodes: teams.nodes.map((team: any) => ({
-          id: team.id,
-          key: team.key,
-          name: team.name,
-        })),
-      },
+      teams: teams.nodes.map((team: any) => ({
+        id: team.id,
+        key: team.key,
+        name: team.name,
+      })),
       lead: lead
         ? {
           id: lead.id,

@@ -22,24 +22,20 @@ export interface LinearIssue {
   };
   priority: number;
   estimate?: number;
-  labels: {
-    nodes: Array<{
+  labels: Array<{
+    id: string;
+    name: string;
+  }>;
+  comments?: Array<{
+    id: string;
+    body: string;
+    user: {
       id: string;
       name: string;
-    }>;
-  };
-  comments?: {
-    nodes: Array<{
-      id: string;
-      body: string;
-      user: {
-        id: string;
-        name: string;
-      };
-      createdAt: string;
-      updatedAt: string;
-    }>;
-  };
+    };
+    createdAt: string;
+    updatedAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,13 +46,11 @@ export interface LinearProject {
   description?: string;
   state: string;
   progress: number;
-  teams: {
-    nodes: Array<{
-      id: string;
-      key: string;
-      name: string;
-    }>;
-  };
+  teams: Array<{
+    id: string;
+    key: string;
+    name: string;
+  }>;
   lead?: {
     id: string;
     name: string;
