@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "A CLI for Linear.app which outputs JSON, intended for use by LLM agents (and people who like structured data).",
   "main": "src/main.js",
+  "type": "module",
   "scripts": {
+    "start": "tsx src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
@@ -15,6 +17,7 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
-    "commander": "^14.0.0"
+    "commander": "^14.0.0",
+    "tsx": "^4.20.5"
   }
 }
