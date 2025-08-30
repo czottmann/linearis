@@ -3,6 +3,7 @@
 import { program } from "commander";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupProjectsCommands } from "./commands/projects.js";
+import { generateUsageInfo } from "./utils/usage.js";
 
 // Setup main program
 program
@@ -19,6 +20,13 @@ program.action(() => {
 // Setup all subcommand groups
 setupIssuesCommands(program);
 setupProjectsCommands(program);
+
+// Add usage command
+program.command("usage")
+  .description("show usage info for *all* tools")
+  .action(() => {
+    console.log(generateUsageInfo(program));
+  });
 
 // Parse command line arguments
 program.parse();
