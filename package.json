@@ -2,10 +2,10 @@
   "name": "zco-linear-cli",
   "version": "1.0.0",
   "description": "A CLI for Linear.app which outputs JSON, intended for use by LLM agents (and people who like structured data).",
-  "main": "src/main.js",
+  "main": "src/main.ts",
   "type": "module",
   "scripts": {
-    "start": "tsx src/main.js",
+    "start": "tsx src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
@@ -19,5 +19,9 @@
     "@linear/sdk": "^58.1.0",
     "commander": "^14.0.0",
     "tsx": "^4.20.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
   }
 }

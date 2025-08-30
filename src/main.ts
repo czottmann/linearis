@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { setupProjectsCommands } from "./commands/projects.js";
 import { setupIssuesCommands } from "./commands/issues.js";
-import { setupCommentsCommands } from "./commands/comments.js";
-import { setupUserCommands } from "./commands/user.js";
+import { setupProjectsCommands } from "./commands/projects.js";
 
 // Setup main program
 program
@@ -19,10 +17,8 @@ program.action(() => {
 });
 
 // Setup all subcommand groups
-setupProjectsCommands(program);
 setupIssuesCommands(program);
-setupCommentsCommands(program);
-setupUserCommands(program);
+setupProjectsCommands(program);
 
 // Parse command line arguments
 program.parse();

@@ -1,11 +1,12 @@
+import { Command } from "commander";
 import { createLinearService } from "../utils/linear-client.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
  * Setup projects commands on the program
- * @param {Command} program - Commander.js program instance
+ * @param program - Commander.js program instance
  */
-export function setupProjectsCommands(program) {
+export function setupProjectsCommands(program: Command): void {
   const projects = program.command("projects")
     .description("Project operations");
 
@@ -15,9 +16,14 @@ export function setupProjectsCommands(program) {
   });
 
   projects.command("list")
-    .description("List all projects")
-    .action(handleAsyncCommand(async (options, command) => {
-      const service = await createLinearService(command.parent.parent.opts());
+    .description("List projects")
+    .option(
+      "-l, --limit <number>",
+      "limit results (not implemented by Linear SDK, showing all)",
+      "100",
+    )
+    .action(handleAsyncCommand(async (_options: any, command: Command) => {
+      const service = await createLinearService(command.parent!.parent!.opts());
       const result = await service.getProjects();
       outputSuccess(result);
     }));
