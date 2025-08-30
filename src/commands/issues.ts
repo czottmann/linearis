@@ -75,7 +75,10 @@ export function setupIssuesCommands(program: Command): void {
       "team key, name, or ID (required if not specified)",
     )
     .option("--labels <labels>", "labels (comma-separated names or IDs)")
-    .option("--milestone <milestoneId>", "milestone ID")
+    .option(
+      "--milestone <milestone>",
+      "milestone name or ID (requires --project)",
+    )
     .option("--status <status>", "status name or ID")
     .option("--parent-ticket <parentId>", "parent issue ID or identifier")
     .action(
@@ -106,6 +109,15 @@ export function setupIssuesCommands(program: Command): void {
             labelIds = await service.resolveLabelIds(labelNames);
           }
 
+          // Resolve milestone if provided (requires project to be resolved first)
+          let milestoneId = options.milestone;
+          if (milestoneId && projectId) {
+            milestoneId = await service.resolveMilestoneId(
+              milestoneId,
+              projectId,
+            );
+          }
+
           // Resolve parent ticket if provided
           let parentId = options.parentTicket;
           if (parentId) {
@@ -126,6 +138,7 @@ export function setupIssuesCommands(program: Command): void {
             stateId: options.status,
             labelIds,
             parentId,
+            milestoneId,
           };
 
           const result = await service.createIssue(createArgs);

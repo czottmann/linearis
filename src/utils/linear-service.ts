@@ -315,6 +315,7 @@ export class LinearService {
       labelIds: args.labelIds,
       estimate: args.estimate,
       parentId: args.parentId,
+      projectMilestoneId: args.milestoneId,
     });
 
     if (!payload.success || !payload._issue) {
@@ -470,6 +471,32 @@ export class LinearService {
     }
 
     return teams.nodes[0].id;
+  }
+
+  /**
+   * Resolve milestone name to milestone ID within a project
+   */
+  async resolveMilestoneId(
+    milestoneNameOrId: string,
+    projectId: string,
+  ): Promise<string> {
+    // If it looks like a UUID, return as-is
+    if (milestoneNameOrId.length === 36 && milestoneNameOrId.includes("-")) {
+      return milestoneNameOrId;
+    }
+
+    // Search for milestone by name within the specified project
+    const project = await this.client.project(projectId);
+    const milestones = await project.projectMilestones({
+      filter: { name: { eq: milestoneNameOrId } },
+      first: 1,
+    });
+
+    if (milestones.nodes.length === 0) {
+      throw new Error(`Milestone "${milestoneNameOrId}" not found in project`);
+    }
+
+    return milestones.nodes[0].id;
   }
 }
 
