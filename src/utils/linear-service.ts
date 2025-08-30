@@ -7,6 +7,7 @@ import {
   SearchIssuesArgs,
   UpdateIssueArgs,
 } from "./linear-types.js";
+import { isUuid } from "./uuid.js";
 
 export class LinearService {
   private client: LinearClient;
@@ -194,7 +195,7 @@ export class LinearService {
     let issue;
 
     // Check if it's a UUID (36 chars with dashes) or identifier (like ZCO-123)
-    if (issueId.length === 36 && issueId.includes("-")) {
+    if (isUuid(issueId)) {
       issue = await this.client.issue(issueId);
     } else {
       // Try to find by identifier - parse team key and issue number
@@ -398,7 +399,7 @@ export class LinearService {
    */
   async resolveProjectId(projectNameOrId: string): Promise<string> {
     // If it looks like a UUID, return as-is
-    if (projectNameOrId.length === 36 && projectNameOrId.includes("-")) {
+    if (isUuid(projectNameOrId)) {
       return projectNameOrId;
     }
 
@@ -423,7 +424,7 @@ export class LinearService {
 
     for (const label of labelNamesOrIds) {
       // If it looks like a UUID, add as-is
-      if (label.length === 36 && label.includes("-")) {
+      if (isUuid(label)) {
         results.push(label);
         continue;
       }
@@ -449,7 +450,7 @@ export class LinearService {
    */
   async resolveTeamId(teamKeyOrNameOrId: string): Promise<string> {
     // If it looks like a UUID, return as-is
-    if (teamKeyOrNameOrId.length === 36 && teamKeyOrNameOrId.includes("-")) {
+    if (isUuid(teamKeyOrNameOrId)) {
       return teamKeyOrNameOrId;
     }
 
@@ -481,7 +482,7 @@ export class LinearService {
     projectId: string,
   ): Promise<string> {
     // If it looks like a UUID, return as-is
-    if (milestoneNameOrId.length === 36 && milestoneNameOrId.includes("-")) {
+    if (isUuid(milestoneNameOrId)) {
       return milestoneNameOrId;
     }
 

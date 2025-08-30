@@ -106,11 +106,21 @@ export async function createLinearService(
 
 ### Smart ID Resolution Pattern
 
+**UUID Validation Helper** - src/utils/uuid.ts:
+
+```typescript
+// Generic UUID validation using proper regex
+export function isUuid(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+```
+
 **Flexible Identifier Handling** - src/utils/linear-service.ts (lines 196-227):
 
 ```typescript
-// Check if UUID or identifier format
-if (issueId.length === 36 && issueId.includes("-")) {
+// Check if UUID or identifier format using helper
+if (isUuid(issueId)) {
   issue = await this.client.issue(issueId);
 } else {
   // Parse team-number format like "ZCO-123"
@@ -206,6 +216,7 @@ export function outputError(error: Error): void {
 - auth.ts - Authentication handling
 - output.ts - Response formatting
 - linear-types.d.ts - Type definitions
+- uuid.ts - UUID validation utilities
 
 **Command Layer** - `src/commands/` directory:
 

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
+import { isUuid } from "../utils/uuid.js";
 
 /**
  * Setup issues commands on the program
@@ -122,7 +123,7 @@ export function setupIssuesCommands(program: Command): void {
           let parentId = options.parentTicket;
           if (parentId) {
             // If it's not a UUID, try to resolve it as an identifier
-            if (parentId.length !== 36 || !parentId.includes("-")) {
+            if (!isUuid(parentId)) {
               const parentIssue = await service.getIssueById(parentId);
               parentId = parentIssue.id;
             }
@@ -183,7 +184,7 @@ export function setupIssuesCommands(program: Command): void {
 
           // Resolve issue ID if it's an identifier
           let resolvedIssueId = issueId;
-          if (issueId.length !== 36 || !issueId.includes("-")) {
+          if (!isUuid(issueId)) {
             const issue = await service.getIssueById(issueId);
             resolvedIssueId = issue.id;
           }
