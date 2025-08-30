@@ -70,7 +70,6 @@ export function setupIssuesCommands(program: Command): void {
     .option("-a, --assignee <assigneeId>", "assign to user ID")
     .option("-p, --priority <priority>", "priority level (1-4)")
     .option("--project <project>", "add to project (name or ID)")
-    .option("--project-id <projectId>", "add to project (ID only)")
     .option(
       "--team <team>",
       "team key, name, or ID (required if not specified)",
@@ -92,9 +91,9 @@ export function setupIssuesCommands(program: Command): void {
             teamId = await service.resolveTeamId(teamId);
           }
 
-          // Resolve project (prefer --project over --project-id for smart resolution)
-          let projectId = options.projectId || options.project;
-          if (projectId && projectId !== options.projectId) {
+          // Resolve project if provided
+          let projectId = options.project;
+          if (projectId) {
             projectId = await service.resolveProjectId(projectId);
           }
 
