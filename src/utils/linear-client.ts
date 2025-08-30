@@ -102,51 +102,89 @@ export class LinearService {
    * Get issues with optional limit
    */
   async getIssues(limit: number = 25): Promise<LinearIssue[]> {
-    const issues = await this.client.issues({
+    // Use raw GraphQL to fetch everything in one query
+    const query = `
+      query GetIssues($first: Int!, $orderBy: PaginationOrderBy) {
+        issues(first: $first, orderBy: $orderBy, includeArchived: false) {
+          nodes {
+            id
+            identifier
+            title
+            description
+            priority
+            estimate
+            createdAt
+            updatedAt
+            state {
+              id
+              name
+            }
+            assignee {
+              id
+              name
+            }
+            team {
+              id
+              key
+              name
+            }
+            project {
+              id
+              name
+            }
+            labels {
+              nodes {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await this.client._request<any>(query, {
       first: limit,
       orderBy: "updatedAt",
-      includeArchived: false,
     });
 
-    return Promise.all(issues.nodes.map(async (issue) => ({
+    return result.issues.nodes.map((issue: any) => ({
       id: issue.id,
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description || undefined,
       state: {
-        id: (await issue.state).id,
-        name: (await issue.state).name,
+        id: issue.state.id,
+        name: issue.state.name,
       },
       assignee: issue.assignee
         ? {
-          id: (await issue.assignee).id,
-          name: (await issue.assignee).name,
+          id: issue.assignee.id,
+          name: issue.assignee.name,
         }
         : undefined,
       team: {
-        id: (await issue.team).id,
-        key: (await issue.team).key,
-        name: (await issue.team).name,
+        id: issue.team.id,
+        key: issue.team.key,
+        name: issue.team.name,
       },
       project: issue.project
         ? {
-          id: (await issue.project).id,
-          name: (await issue.project).name,
+          id: issue.project.id,
+          name: issue.project.name,
         }
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
       labels: {
-        nodes: issue.labels
-          ? (await issue.labels()).nodes.map((label: any) => ({
-            id: label.id,
-            name: label.name,
-          }))
-          : [],
+        nodes: issue.labels.nodes.map((label: any) => ({
+          id: label.id,
+          name: label.name,
+        })),
       },
-      createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
-    })));
+      createdAt: new Date(issue.createdAt).toISOString(),
+      updatedAt: new Date(issue.updatedAt).toISOString(),
+    }));
   }
 
   /**
@@ -169,45 +207,59 @@ export class LinearService {
       includeArchived: false,
     });
 
-    let results = await Promise.all(issues.nodes.map(async (issue) => ({
+    // Fetch all relationships in parallel for all issues
+    const issuesWithData = await Promise.all(
+      issues.nodes.map(async (issue) => {
+        const [state, team, assignee, project, labels] = await Promise.all([
+          issue.state,
+          issue.team,
+          issue.assignee,
+          issue.project,
+          issue.labels(),
+        ]);
+        return { issue, state, team, assignee, project, labels };
+      }),
+    );
+
+    let results = issuesWithData.map((
+      { issue, state, team, assignee, project, labels },
+    ) => ({
       id: issue.id,
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description || undefined,
       state: {
-        id: (await issue.state).id,
-        name: (await issue.state).name,
+        id: state.id,
+        name: state.name,
       },
-      assignee: issue.assignee
+      assignee: assignee
         ? {
-          id: (await issue.assignee).id,
-          name: (await issue.assignee).name,
+          id: assignee.id,
+          name: assignee.name,
         }
         : undefined,
       team: {
-        id: (await issue.team).id,
-        key: (await issue.team).key,
-        name: (await issue.team).name,
+        id: team.id,
+        key: team.key,
+        name: team.name,
       },
-      project: issue.project
+      project: project
         ? {
-          id: (await issue.project).id,
-          name: (await issue.project).name,
+          id: project.id,
+          name: project.name,
         }
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
       labels: {
-        nodes: issue.labels
-          ? (await issue.labels()).nodes.map((label: any) => ({
-            id: label.id,
-            name: label.name,
-          }))
-          : [],
+        nodes: labels.nodes.map((label: any) => ({
+          id: label.id,
+          name: label.name,
+        })),
       },
       createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
-    })));
+    }));
 
     // Apply text search if query is provided
     if (args.query) {
@@ -261,41 +313,48 @@ export class LinearService {
       issue = issues.nodes[0];
     }
 
+    // Fetch all relationships in parallel
+    const [state, team, assignee, project, labels] = await Promise.all([
+      issue.state,
+      issue.team,
+      issue.assignee,
+      issue.project,
+      issue.labels(),
+    ]);
+
     return {
       id: issue.id,
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description || undefined,
       state: {
-        id: (await issue.state).id,
-        name: (await issue.state).name,
+        id: state.id,
+        name: state.name,
       },
-      assignee: issue.assignee
+      assignee: assignee
         ? {
-          id: (await issue.assignee).id,
-          name: (await issue.assignee).name,
+          id: assignee.id,
+          name: assignee.name,
         }
         : undefined,
       team: {
-        id: (await issue.team).id,
-        key: (await issue.team).key,
-        name: (await issue.team).name,
+        id: team.id,
+        key: team.key,
+        name: team.name,
       },
-      project: issue.project
+      project: project
         ? {
-          id: (await issue.project).id,
-          name: (await issue.project).name,
+          id: project.id,
+          name: project.name,
         }
         : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
       labels: {
-        nodes: issue.labels
-          ? (await issue.labels()).nodes.map((label: any) => ({
-            id: label.id,
-            name: label.name,
-          }))
-          : [],
+        nodes: labels.nodes.map((label: any) => ({
+          id: label.id,
+          name: label.name,
+        })),
       },
       createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
@@ -371,31 +430,40 @@ export class LinearService {
       includeArchived: false,
     });
 
-    return Promise.all(projects.nodes.map(async (project) => ({
+    // Fetch all relationships in parallel for all projects
+    const projectsWithData = await Promise.all(
+      projects.nodes.map(async (project) => {
+        const [teams, lead] = await Promise.all([
+          project.teams(),
+          project.lead,
+        ]);
+        return { project, teams, lead };
+      }),
+    );
+
+    return projectsWithData.map(({ project, teams, lead }) => ({
       id: project.id,
       name: project.name,
       description: project.description || undefined,
       state: project.state,
       progress: project.progress,
       teams: {
-        nodes: project.teams
-          ? (await project.teams()).nodes.map((team: any) => ({
-            id: team.id,
-            key: team.key,
-            name: team.name,
-          }))
-          : [],
+        nodes: teams.nodes.map((team: any) => ({
+          id: team.id,
+          key: team.key,
+          name: team.name,
+        })),
       },
-      lead: project.lead
+      lead: lead
         ? {
-          id: (await project.lead).id,
-          name: (await project.lead).name,
+          id: lead.id,
+          name: lead.name,
         }
         : undefined,
       targetDate: project.targetDate?.toISOString(),
       createdAt: project.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: project.updatedAt?.toISOString() || new Date().toISOString(),
-    })));
+    }));
   }
 
   /**
