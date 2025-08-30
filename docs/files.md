@@ -83,6 +83,9 @@ patterns:
 - Lines 354-393: Project operations with relationship fetching
 - Lines 398-473: Smart ID resolution methods for projects, labels, and teams
 
+**docs/Linear-API@current.graphql** - Linear GraphQL API schema, downloaded from
+https://studio.apollographql.com/public/Linear-API/variant/current/schema/sdl?selectedSchema=%23%40%21api%21%40%23
+
 ## Build System
 
 ### Execution Environment
