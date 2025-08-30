@@ -1,4 +1,3 @@
-
 export interface LinearIssue {
   id: string;
   identifier: string;
@@ -27,6 +26,18 @@ export interface LinearIssue {
     nodes: Array<{
       id: string;
       name: string;
+    }>;
+  };
+  comments?: {
+    nodes: Array<{
+      id: string;
+      body: string;
+      user: {
+        id: string;
+        name: string;
+      };
+      createdAt: string;
+      updatedAt: string;
     }>;
   };
   createdAt: string;

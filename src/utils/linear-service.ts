@@ -1,6 +1,12 @@
 import { LinearClient } from "@linear/sdk";
 import { CommandOptions, getApiToken } from "./auth.js";
-import { LinearIssue, SearchIssuesArgs, CreateIssueArgs, UpdateIssueArgs, LinearProject } from "./linear-types.js";
+import {
+  CreateIssueArgs,
+  LinearIssue,
+  LinearProject,
+  SearchIssuesArgs,
+  UpdateIssueArgs,
+} from "./linear-types.js";
 
 export class LinearService {
   private client: LinearClient;
@@ -225,13 +231,15 @@ export class LinearService {
     }
 
     // Fetch all relationships in parallel
-    const [state, team, assignee, project, labels] = await Promise.all([
-      issue.state,
-      issue.team,
-      issue.assignee,
-      issue.project,
-      issue.labels(),
-    ]);
+    const [state, team, assignee, project, labels, comments] = await Promise
+      .all([
+        issue.state,
+        issue.team,
+        issue.assignee,
+        issue.project,
+        issue.labels(),
+        issue.comments(),
+      ]);
 
     return {
       id: issue.id,
@@ -265,6 +273,23 @@ export class LinearService {
         nodes: labels.nodes.map((label: any) => ({
           id: label.id,
           name: label.name,
+        })),
+      },
+      comments: {
+        nodes: await Promise.all(comments.nodes.map(async (comment: any) => {
+          const user = await comment.user;
+          return {
+            id: comment.id,
+            body: comment.body,
+            user: {
+              id: user.id,
+              name: user.name,
+            },
+            createdAt: comment.createdAt?.toISOString() ||
+              new Date().toISOString(),
+            updatedAt: comment.updatedAt?.toISOString() ||
+              new Date().toISOString(),
+          };
         })),
       },
       createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
