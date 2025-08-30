@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { createLinearService } from "../utils/linear-client.js";
+import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
