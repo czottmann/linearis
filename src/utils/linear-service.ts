@@ -10,6 +10,82 @@ import {
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
 
+/**
+ * Transform raw Linear API issue data to standardized LinearIssue format
+ */
+function transformIssueData(
+  issue: any,
+  includeComments: boolean = false,
+): LinearIssue {
+  const transformed: LinearIssue = {
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description || undefined,
+    state: {
+      id: issue.state.id,
+      name: issue.state.name,
+    },
+    assignee: issue.assignee
+      ? {
+        id: issue.assignee.id,
+        name: issue.assignee.name,
+      }
+      : undefined,
+    team: {
+      id: issue.team.id,
+      key: issue.team.key,
+      name: issue.team.name,
+    },
+    project: issue.project
+      ? {
+        id: issue.project.id,
+        name: issue.project.name,
+      }
+      : undefined,
+    priority: issue.priority,
+    estimate: issue.estimate || undefined,
+    labels: (issue.labels.nodes || issue.labels || []).map((label: any) => ({
+      id: label.id,
+      name: label.name,
+    })),
+    createdAt: issue.createdAt instanceof Date
+      ? issue.createdAt.toISOString()
+      : (issue.createdAt
+        ? new Date(issue.createdAt).toISOString()
+        : new Date().toISOString()),
+    updatedAt: issue.updatedAt instanceof Date
+      ? issue.updatedAt.toISOString()
+      : (issue.updatedAt
+        ? new Date(issue.updatedAt).toISOString()
+        : new Date().toISOString()),
+  };
+
+  // Add comments if requested and available
+  if (includeComments && issue.comments) {
+    transformed.comments = issue.comments.map((comment: any) => ({
+      id: comment.id,
+      body: comment.body,
+      user: {
+        id: comment.user.id,
+        name: comment.user.name,
+      },
+      createdAt: comment.createdAt instanceof Date
+        ? comment.createdAt.toISOString()
+        : (comment.createdAt
+          ? new Date(comment.createdAt).toISOString()
+          : new Date().toISOString()),
+      updatedAt: comment.updatedAt instanceof Date
+        ? comment.updatedAt.toISOString()
+        : (comment.updatedAt
+          ? new Date(comment.updatedAt).toISOString()
+          : new Date().toISOString()),
+    }));
+  }
+
+  return transformed;
+}
+
 export class LinearService {
   private client: LinearClient;
 
@@ -67,41 +143,7 @@ export class LinearService {
       orderBy: "updatedAt",
     });
 
-    return result.issues.nodes.map((issue: any) => ({
-      id: issue.id,
-      identifier: issue.identifier,
-      title: issue.title,
-      description: issue.description || undefined,
-      state: {
-        id: issue.state.id,
-        name: issue.state.name,
-      },
-      assignee: issue.assignee
-        ? {
-          id: issue.assignee.id,
-          name: issue.assignee.name,
-        }
-        : undefined,
-      team: {
-        id: issue.team.id,
-        key: issue.team.key,
-        name: issue.team.name,
-      },
-      project: issue.project
-        ? {
-          id: issue.project.id,
-          name: issue.project.name,
-        }
-        : undefined,
-      priority: issue.priority,
-      estimate: issue.estimate || undefined,
-      labels: issue.labels.nodes.map((label: any) => ({
-        id: label.id,
-        name: label.name,
-      })),
-      createdAt: new Date(issue.createdAt).toISOString(),
-      updatedAt: new Date(issue.updatedAt).toISOString(),
-    }));
+    return result.issues.nodes.map((issue: any) => transformIssueData(issue));
   }
 
   /**
@@ -140,41 +182,16 @@ export class LinearService {
 
     let results = issuesWithData.map((
       { issue, state, team, assignee, project, labels },
-    ) => ({
-      id: issue.id,
-      identifier: issue.identifier,
-      title: issue.title,
-      description: issue.description || undefined,
-      state: {
-        id: state.id,
-        name: state.name,
-      },
-      assignee: assignee
-        ? {
-          id: assignee.id,
-          name: assignee.name,
-        }
-        : undefined,
-      team: {
-        id: team.id,
-        key: team.key,
-        name: team.name,
-      },
-      project: project
-        ? {
-          id: project.id,
-          name: project.name,
-        }
-        : undefined,
-      priority: issue.priority,
-      estimate: issue.estimate || undefined,
-      labels: labels.nodes.map((label: any) => ({
-        id: label.id,
-        name: label.name,
-      })),
-      createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
-    }));
+    ) =>
+      transformIssueData({
+        ...issue,
+        state,
+        team,
+        assignee,
+        project,
+        labels,
+      })
+    );
 
     // Apply text search if query is provided
     if (args.query) {
@@ -239,39 +256,9 @@ export class LinearService {
         issue.comments(),
       ]);
 
-    return {
-      id: issue.id,
-      identifier: issue.identifier,
-      title: issue.title,
-      description: issue.description || undefined,
-      state: {
-        id: state.id,
-        name: state.name,
-      },
-      assignee: assignee
-        ? {
-          id: assignee.id,
-          name: assignee.name,
-        }
-        : undefined,
-      team: {
-        id: team.id,
-        key: team.key,
-        name: team.name,
-      },
-      project: project
-        ? {
-          id: project.id,
-          name: project.name,
-        }
-        : undefined,
-      priority: issue.priority,
-      estimate: issue.estimate || undefined,
-      labels: labels.nodes.map((label: any) => ({
-        id: label.id,
-        name: label.name,
-      })),
-      comments: await Promise.all(comments.nodes.map(async (comment: any) => {
+    // Process comments for inclusion
+    const processedComments = await Promise.all(
+      comments.nodes.map(async (comment: any) => {
         const user = await comment.user;
         return {
           id: comment.id,
@@ -280,15 +267,21 @@ export class LinearService {
             id: user.id,
             name: user.name,
           },
-          createdAt: comment.createdAt?.toISOString() ||
-            new Date().toISOString(),
-          updatedAt: comment.updatedAt?.toISOString() ||
-            new Date().toISOString(),
+          createdAt: comment.createdAt,
+          updatedAt: comment.updatedAt,
         };
-      })),
-      createdAt: issue.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: issue.updatedAt?.toISOString() || new Date().toISOString(),
-    };
+      }),
+    );
+
+    return transformIssueData({
+      ...issue,
+      state,
+      team,
+      assignee,
+      project,
+      labels,
+      comments: processedComments,
+    }, true);
   }
 
   /**
