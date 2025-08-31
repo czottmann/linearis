@@ -94,3 +94,18 @@ export interface SearchIssuesArgs {
   states?: string[];
   limit?: number;
 }
+
+export interface LinearLabel {
+  id: string;
+  name: string;
+  color: string;
+  scope: "workspace" | "team";
+  team?: {
+    id: string;
+    name: string;
+  };
+  group?: {
+    id: string;
+    name: string;
+  };
+}

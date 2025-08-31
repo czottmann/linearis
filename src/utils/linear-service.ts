@@ -3,6 +3,7 @@ import { CommandOptions, getApiToken } from "./auth.js";
 import {
   CreateIssueArgs,
   LinearIssue,
+  LinearLabel,
   LinearProject,
   SearchIssuesArgs,
   UpdateIssueArgs,
@@ -498,6 +499,105 @@ export class LinearService {
     }
 
     return milestones.nodes[0].id;
+  }
+
+  /**
+   * Get all labels (workspace and team-specific)
+   */
+  async getLabels(teamFilter?: string): Promise<{ labels: LinearLabel[] }> {
+    const labels: LinearLabel[] = [];
+
+    if (teamFilter) {
+      // Get labels for specific team only
+      const teamId = await this.resolveTeamId(teamFilter);
+      const team = await this.client.team(teamId);
+      const teamLabels = await this.client.issueLabels({
+        filter: { team: { id: { eq: teamId } } },
+        first: 100,
+      });
+
+      for (const label of teamLabels.nodes) {
+        // Skip group labels (isGroup: true) as they're containers, not actual labels
+        if (label.isGroup) {
+          continue;
+        }
+
+        const parent = await label._parent;
+
+        const labelData: LinearLabel = {
+          id: label.id,
+          name: label.name,
+          color: label.color,
+          scope: "team",
+          team: {
+            id: team.id,
+            name: team.name,
+          },
+        };
+
+        // Add group info if this label has a parent group
+        if (parent) {
+          // Fetch the parent label details to get the name
+          const parentLabel = await this.client.issueLabel(parent.id);
+          labelData.group = {
+            id: parent.id,
+            name: parentLabel.name,
+          };
+        }
+
+        labels.push(labelData);
+      }
+    } else {
+      // Get all labels (workspace + team labels)
+      const allLabels = await this.client.issueLabels({
+        first: 100,
+      });
+
+      // Get all teams to determine which labels are team-specific
+      const teams = await this.client.teams({ first: 50 });
+      const teamMap = new Map(teams.nodes.map((team) => [team.id, team]));
+
+      for (const label of allLabels.nodes) {
+        // Skip group labels (isGroup: true) as they're containers, not actual labels
+        if (label.isGroup) {
+          continue;
+        }
+
+        const [team, parent] = await Promise.all([
+          label.team,
+          label._parent,
+        ]);
+
+        const labelData: LinearLabel = {
+          id: label.id,
+          name: label.name,
+          color: label.color,
+          scope: team ? "team" : "workspace",
+        };
+
+        // Add team info if this is a team-specific label
+        if (team) {
+          labelData.team = {
+            id: team.id,
+            name: team.name,
+          };
+        }
+
+        // Add group info if this label has a parent group
+        if (parent) {
+          // Fetch the parent label details to get the name
+          const parentLabel = await this.client.issueLabel(parent.id);
+          labelData.group = {
+            id: parent.id,
+            name: parentLabel.name,
+          };
+        }
+
+        labels.push(labelData);
+      }
+    }
+
+    return { labels };
   }
 }
 

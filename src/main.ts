@@ -2,6 +2,7 @@
 
 import { program } from "commander";
 import { setupIssuesCommands } from "./commands/issues.js";
+import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
 import { generateUsageInfo } from "./utils/usage.js";
 
@@ -19,6 +20,7 @@ program.action(() => {
 
 // Setup all subcommand groups
 setupIssuesCommands(program);
+setupLabelsCommands(program);
 setupProjectsCommands(program);
 
 // Add usage command
