@@ -11,6 +11,17 @@ import {
 import { isUuid } from "./uuid.js";
 
 /**
+ * Generic ID resolver that handles UUID validation and passthrough
+ */
+function resolveId(input: string): string {
+  if (isUuid(input)) {
+    return input;
+  }
+  // Return as-is for non-UUID inputs that need further resolution
+  return input;
+}
+
+/**
  * Transform raw Linear API issue data to standardized LinearIssue format
  */
 function transformIssueData(
@@ -392,8 +403,9 @@ export class LinearService {
    * Resolve project name to project ID
    */
   async resolveProjectId(projectNameOrId: string): Promise<string> {
-    // If it looks like a UUID, return as-is
-    if (isUuid(projectNameOrId)) {
+    // Use generic ID resolver
+    const resolved = resolveId(projectNameOrId);
+    if (resolved === projectNameOrId && isUuid(projectNameOrId)) {
       return projectNameOrId;
     }
 
@@ -421,8 +433,9 @@ export class LinearService {
     const results: string[] = [];
 
     for (const label of labelNamesOrIds) {
-      // If it looks like a UUID, add as-is
-      if (isUuid(label)) {
+      // Use generic ID resolver
+      const resolved = resolveId(label);
+      if (resolved === label && isUuid(label)) {
         results.push(label);
         continue;
       }
@@ -491,8 +504,9 @@ export class LinearService {
    * Resolve team key or name to team ID
    */
   async resolveTeamId(teamKeyOrNameOrId: string): Promise<string> {
-    // If it looks like a UUID, return as-is
-    if (isUuid(teamKeyOrNameOrId)) {
+    // Use generic ID resolver
+    const resolved = resolveId(teamKeyOrNameOrId);
+    if (resolved === teamKeyOrNameOrId && isUuid(teamKeyOrNameOrId)) {
       return teamKeyOrNameOrId;
     }
 
@@ -523,8 +537,9 @@ export class LinearService {
     milestoneNameOrId: string,
     projectId: string,
   ): Promise<string> {
-    // If it looks like a UUID, return as-is
-    if (isUuid(milestoneNameOrId)) {
+    // Use generic ID resolver
+    const resolved = resolveId(milestoneNameOrId);
+    if (resolved === milestoneNameOrId && isUuid(milestoneNameOrId)) {
       return milestoneNameOrId;
     }
 
