@@ -2,9 +2,15 @@
   "name": "zco-linear-cli",
   "version": "1.0.0",
   "description": "High-performance CLI for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and users who prefer structured data.",
-  "main": "src/main.ts",
+  "main": "dist/main.js",
   "type": "module",
+  "bin": {
+    "linear": "dist/main.js"
+  },
   "scripts": {
+    "build": "tsc",
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
+    "prepare": "npm run clean && npm run build",
     "start": "tsx src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,11 +23,11 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
-    "commander": "^14.0.0",
-    "tsx": "^4.20.5"
+    "commander": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.0.0"
   }
 }

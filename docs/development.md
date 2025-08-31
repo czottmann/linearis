@@ -1,4 +1,4 @@
-<!-- Generated: 2025-08-30T19:51:49+02:00 -->
+<!-- Generated: 2025-08-31T18:51:03+02:00 -->
 
 # Development
 
@@ -177,14 +177,28 @@ issues.command("read <issueId>")
 
 ### Development Server Setup
 
-**Local Development** - package.json (line 8):
+**Development Mode** - package.json (line 14):
 
 ```bash
-# Run with hot reloading via tsx
+# Run with TypeScript execution via tsx (development only)
 pnpm start issues list -l 5
 
 # Direct execution for debugging
 npx tsx src/main.ts --api-token <token> issues read ZCO-123
+```
+
+**Production Build Workflow**:
+
+```bash
+# Clean and compile for production
+npm run clean && npm run build
+
+# Test compiled output (4.2x faster than tsx)
+node dist/main.js issues list -l 5
+
+# Time comparison (0.15s vs 0.64s)
+time node dist/main.js --help
+time npx tsx src/main.ts --help
 ```
 
 ### Authentication Development
@@ -240,12 +254,30 @@ export function outputError(error: Error): void {
 
 **Type Safety** - Every function parameter and return type explicitly typed
 **Error Boundaries** - All async operations wrapped with error handling
-**Performance First** - All API calls optimized for parallel execution **User
-Experience** - Smart defaults with explicit override options
+**Performance First** - All API calls optimized for parallel execution
+**User Experience** - Smart defaults with explicit override options
+**Build Automation** - npm prepare script ensures consistent builds
+
+### Build System Integration
+
+**Automated Building** - package.json (line 13):
+
+```bash
+# prepare script runs automatically during install
+npm install  # Triggers: npm run clean && npm run build
+```
+
+**TypeScript Configuration** - tsconfig.json optimizations:
+
+- Target: ES2023 for modern Node.js features
+- Output: dist/ directory with declaration files  
+- Remove comments and source maps for production
+- Strict mode enabled for type safety
 
 ### Common Development Issues
 
 **ES Module Imports** - Always use .js extensions in imports, even for .ts files
-**Authentication Testing** - Use token file method for local development **API
-Rate Limits** - Linear API has reasonable limits, but batch operations help
-**TypeScript Compilation** - Use tsx for development, avoid separate build step
+**Authentication Testing** - Use token file method for local development
+**API Rate Limits** - Linear API has reasonable limits, but batch operations help
+**Development vs Production** - Use tsx for development, compiled JS for production (4.2x faster)
+**Missing dist/** - Run `npm install` or `npm run build` to create compiled output

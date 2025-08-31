@@ -132,53 +132,68 @@ export class LinearService {
    * Get issues with optional limit
    */
   async getIssues(limit: number = 25): Promise<LinearIssue[]> {
-    // Use raw GraphQL to fetch everything in one query
-    const query = `
-      query GetIssues($first: Int!, $orderBy: PaginationOrderBy) {
-        issues(first: $first, orderBy: $orderBy, includeArchived: false) {
-          nodes {
-            id
-            identifier
-            title
-            description
-            priority
-            estimate
-            createdAt
-            updatedAt
-            state {
-              id
-              name
-            }
-            assignee {
-              id
-              name
-            }
-            team {
-              id
-              key
-              name
-            }
-            project {
-              id
-              name
-            }
-            labels {
-              nodes {
-                id
-                name
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const result = await this.client._request<any>(query, {
+    const issues = await this.client.issues({
       first: limit,
-      orderBy: "updatedAt",
+      orderBy: "updatedAt" as any,
+      includeArchived: false,
     });
 
-    return result.issues.nodes.map((issue: any) => transformIssueData(issue));
+    // Fetch relationships in parallel for all issues
+    const issuePromises = issues.nodes.map(
+      async (issue): Promise<LinearIssue | null> => {
+        const [state, assignee, team, project, labels] = await Promise.all([
+          issue.state,
+          issue.assignee,
+          issue.team,
+          issue.project,
+          issue.labels(),
+        ]);
+
+        // Skip issues without required data
+        if (!state || !team) {
+          return null;
+        }
+
+        return {
+          id: issue.id,
+          identifier: issue.identifier,
+          title: issue.title,
+          description: issue.description,
+          priority: issue.priority,
+          estimate: issue.estimate,
+          createdAt: issue.createdAt.toISOString(),
+          updatedAt: issue.updatedAt.toISOString(),
+          state: {
+            id: state.id,
+            name: state.name,
+          },
+          assignee: assignee
+            ? {
+              id: assignee.id,
+              name: assignee.name,
+            }
+            : undefined,
+          team: {
+            id: team.id,
+            key: team.key,
+            name: team.name,
+          },
+          project: project
+            ? {
+              id: project.id,
+              name: project.name,
+            }
+            : undefined,
+          labels: labels.nodes.map((label) => ({
+            id: label.id,
+            name: label.name,
+          })),
+        } as LinearIssue;
+      },
+    );
+
+    const results = await Promise.all(issuePromises);
+    return results.filter((issue): issue is LinearIssue => issue !== null);
   }
 
   /**
@@ -197,7 +212,7 @@ export class LinearService {
     const issues = await this.client.issues({
       first: args.limit || 10,
       filter: Object.keys(filter).length > 0 ? filter : undefined,
-      orderBy: "updatedAt",
+      orderBy: "updatedAt" as any,
       includeArchived: false,
     });
 
@@ -348,12 +363,17 @@ export class LinearService {
       projectMilestoneId: args.milestoneId,
     });
 
-    if (!payload.success || !payload._issue) {
+    if (!payload.success) {
       throw new Error("Failed to create issue");
     }
 
     // Fetch the created issue to return full data
-    return this.getIssueById(payload._issue.id);
+    const issue = await payload.issue;
+    if (!issue) {
+      throw new Error("Failed to retrieve created issue");
+    }
+
+    return this.getIssueById(issue.id);
   }
 
   /**
@@ -385,7 +405,7 @@ export class LinearService {
   async getProjects(): Promise<LinearProject[]> {
     const projects = await this.client.projects({
       first: 100,
-      orderBy: "updatedAt",
+      orderBy: "updatedAt" as any,
       includeArchived: false,
     });
 
@@ -610,7 +630,7 @@ export class LinearService {
           continue;
         }
 
-        const parent = await label._parent;
+        const parent = await label.parent;
 
         const labelData: LinearLabel = {
           id: label.id,
@@ -653,7 +673,7 @@ export class LinearService {
 
         const [team, parent] = await Promise.all([
           label.team,
-          label._parent,
+          label.parent,
         ]);
 
         const labelData: LinearLabel = {
