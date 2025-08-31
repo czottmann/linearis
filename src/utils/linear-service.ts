@@ -419,6 +419,10 @@ export class LinearService {
 
   /**
    * Resolve label names to label IDs
+   * Supports:
+   * - Direct label names: "Bug"
+   * - Group/label syntax: "Plumbing/Tooling"
+   * - UUIDs: "uuid-string"
    */
   async resolveLabelIds(labelNamesOrIds: string[]): Promise<string[]> {
     const results: string[] = [];
@@ -430,7 +434,51 @@ export class LinearService {
         continue;
       }
 
-      // Search for label by name
+      // Check if this is a group/label syntax (e.g., "Plumbing/Tooling")
+      if (label.includes("/")) {
+        const [groupName, labelName] = label.split("/", 2);
+
+        if (!groupName || !labelName) {
+          throw new Error(
+            `Invalid group/label syntax: "${label}". Expected format: "GroupName/LabelName"`,
+          );
+        }
+
+        // First find the group label
+        const groupLabels = await this.client.issueLabels({
+          filter: {
+            name: { eq: groupName },
+            isGroup: { eq: true },
+          },
+          first: 1,
+        });
+
+        if (groupLabels.nodes.length === 0) {
+          throw new Error(`Label group "${groupName}" not found`);
+        }
+
+        const groupId = groupLabels.nodes[0].id;
+
+        // Now find the child label within that group
+        const childLabels = await this.client.issueLabels({
+          filter: {
+            name: { eq: labelName },
+            parent: { id: { eq: groupId } },
+          },
+          first: 1,
+        });
+
+        if (childLabels.nodes.length === 0) {
+          throw new Error(
+            `Label "${labelName}" not found in group "${groupName}"`,
+          );
+        }
+
+        results.push(childLabels.nodes[0].id);
+        continue;
+      }
+
+      // Search for label by name (direct match)
       const labels = await this.client.issueLabels({
         filter: { name: { eq: label } },
         first: 1,
