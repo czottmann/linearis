@@ -22,6 +22,30 @@ function resolveId(input: string): string {
 }
 
 /**
+ * Build common GraphQL filter for name/key equality searches
+ */
+function buildEqualityFilter(field: string, value: string): any {
+  return {
+    [field]: { eq: value },
+  };
+}
+
+/**
+ * Execute a Linear client query and handle "not found" errors consistently
+ */
+async function executeLinearQuery<T>(
+  queryFn: () => Promise<{ nodes: T[] }>,
+  entityName: string,
+  identifier: string,
+): Promise<T> {
+  const result = await queryFn();
+  if (result.nodes.length === 0) {
+    throw new Error(`${entityName} "${identifier}" not found`);
+  }
+  return result.nodes[0];
+}
+
+/**
  * Transform raw Linear API issue data to standardized LinearIssue format
  */
 function transformIssueData(
@@ -410,16 +434,17 @@ export class LinearService {
     }
 
     // Search for project by name
-    const projects = await this.client.projects({
-      filter: { name: { eq: projectNameOrId } },
-      first: 1,
-    });
+    const project = await executeLinearQuery(
+      () =>
+        this.client.projects({
+          filter: buildEqualityFilter("name", projectNameOrId),
+          first: 1,
+        }),
+      "Project",
+      projectNameOrId,
+    );
 
-    if (projects.nodes.length === 0) {
-      throw new Error(`Project "${projectNameOrId}" not found`);
-    }
-
-    return projects.nodes[0].id;
+    return project.id;
   }
 
   /**
@@ -451,50 +476,49 @@ export class LinearService {
         }
 
         // First find the group label
-        const groupLabels = await this.client.issueLabels({
-          filter: {
-            name: { eq: groupName },
-            isGroup: { eq: true },
-          },
-          first: 1,
-        });
-
-        if (groupLabels.nodes.length === 0) {
-          throw new Error(`Label group "${groupName}" not found`);
-        }
-
-        const groupId = groupLabels.nodes[0].id;
+        const groupLabel = await executeLinearQuery(
+          () =>
+            this.client.issueLabels({
+              filter: {
+                ...buildEqualityFilter("name", groupName),
+                isGroup: { eq: true },
+              },
+              first: 1,
+            }),
+          "Label group",
+          groupName,
+        );
 
         // Now find the child label within that group
-        const childLabels = await this.client.issueLabels({
-          filter: {
-            name: { eq: labelName },
-            parent: { id: { eq: groupId } },
-          },
-          first: 1,
-        });
+        const childLabel = await executeLinearQuery(
+          () =>
+            this.client.issueLabels({
+              filter: {
+                ...buildEqualityFilter("name", labelName),
+                parent: { id: { eq: groupLabel.id } },
+              },
+              first: 1,
+            }),
+          "Label",
+          `${labelName} in group ${groupName}`,
+        );
 
-        if (childLabels.nodes.length === 0) {
-          throw new Error(
-            `Label "${labelName}" not found in group "${groupName}"`,
-          );
-        }
-
-        results.push(childLabels.nodes[0].id);
+        results.push(childLabel.id);
         continue;
       }
 
       // Search for label by name (direct match)
-      const labels = await this.client.issueLabels({
-        filter: { name: { eq: label } },
-        first: 1,
-      });
+      const labelResult = await executeLinearQuery(
+        () =>
+          this.client.issueLabels({
+            filter: buildEqualityFilter("name", label),
+            first: 1,
+          }),
+        "Label",
+        label,
+      );
 
-      if (labels.nodes.length === 0) {
-        throw new Error(`Label "${label}" not found`);
-      }
-
-      results.push(labels.nodes[0].id);
+      results.push(labelResult.id);
     }
 
     return results;
@@ -511,23 +535,30 @@ export class LinearService {
     }
 
     // Try to find by key first (like "ZCO"), then by name
-    let teams = await this.client.teams({
-      filter: { key: { eq: teamKeyOrNameOrId } },
-      first: 1,
-    });
-
-    if (teams.nodes.length === 0) {
-      teams = await this.client.teams({
-        filter: { name: { eq: teamKeyOrNameOrId } },
-        first: 1,
-      });
+    try {
+      const team = await executeLinearQuery(
+        () =>
+          this.client.teams({
+            filter: buildEqualityFilter("key", teamKeyOrNameOrId),
+            first: 1,
+          }),
+        "Team",
+        teamKeyOrNameOrId,
+      );
+      return team.id;
+    } catch {
+      // If not found by key, try by name
+      const team = await executeLinearQuery(
+        () =>
+          this.client.teams({
+            filter: buildEqualityFilter("name", teamKeyOrNameOrId),
+            first: 1,
+          }),
+        "Team",
+        teamKeyOrNameOrId,
+      );
+      return team.id;
     }
-
-    if (teams.nodes.length === 0) {
-      throw new Error(`Team "${teamKeyOrNameOrId}" not found`);
-    }
-
-    return teams.nodes[0].id;
   }
 
   /**
@@ -545,16 +576,17 @@ export class LinearService {
 
     // Search for milestone by name within the specified project
     const project = await this.client.project(projectId);
-    const milestones = await project.projectMilestones({
-      filter: { name: { eq: milestoneNameOrId } },
-      first: 1,
-    });
+    const milestone = await executeLinearQuery(
+      () =>
+        project.projectMilestones({
+          filter: buildEqualityFilter("name", milestoneNameOrId),
+          first: 1,
+        }),
+      "Milestone",
+      `${milestoneNameOrId} in project`,
+    );
 
-    if (milestones.nodes.length === 0) {
-      throw new Error(`Milestone "${milestoneNameOrId}" not found in project`);
-    }
-
-    return milestones.nodes[0].id;
+    return milestone.id;
   }
 
   /**
