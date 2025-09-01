@@ -8,7 +8,7 @@
     "linear": "dist/main.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/main.js",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "prepare": "npm run clean && npm run build",
     "start": "tsx src/main.ts",
