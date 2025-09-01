@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { createLinearService } from "../utils/linear-service.js";
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { GraphQLIssuesService } from "../utils/graphql-issues-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
@@ -20,14 +19,18 @@ export function setupIssuesCommands(program: Command): void {
   issues.command("list")
     .description("List issues")
     .option("-l, --limit <number>", "limit results", "25")
-    .action(handleAsyncCommand(async (options: any, command: Command) => {
-      const graphQLService = await createGraphQLService(
-        command.parent!.parent!.opts(),
-      );
-      const issuesService = new GraphQLIssuesService(graphQLService);
-      const result = await issuesService.getIssues(parseInt(options.limit));
-      outputSuccess(result);
-    }));
+    .action(
+      handleAsyncCommand(
+        async (options: any, command: Command) => {
+          const graphQLService = await createGraphQLService(
+            command.parent!.parent!.opts(),
+          );
+          const issuesService = new GraphQLIssuesService(graphQLService);
+          const result = await issuesService.getIssues(parseInt(options.limit));
+          outputSuccess(result);
+        }
+      )
+    );
 
   issues.command("search <query>")
     .description("Search issues")
@@ -39,31 +42,20 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (query: string, options: any, command: Command) => {
-          const service = await createLinearService(
+          const graphQLService = await createGraphQLService(
             command.parent!.parent!.opts(),
           );
-
-          // Resolve team if provided
-          let teamId = options.team;
-          if (teamId) {
-            teamId = await service.resolveTeamId(teamId);
-          }
-
-          // Resolve project if provided
-          let projectId = options.project;
-          if (projectId) {
-            projectId = await service.resolveProjectId(projectId);
-          }
+          const issuesService = new GraphQLIssuesService(graphQLService);
 
           const searchArgs = {
             query,
-            teamId,
-            assigneeId: options.assignee,
-            projectId,
+            teamId: options.team, // GraphQL service handles team resolution
+            assigneeId: options.assignee, // GraphQL service handles assignee resolution
+            projectId: options.project, // GraphQL service handles project resolution
             states: options.states ? options.states.split(",") : undefined,
             limit: parseInt(options.limit),
           };
-          const result = await service.searchIssues(searchArgs);
+          const result = await issuesService.searchIssues(searchArgs);
           outputSuccess(result);
         },
       ),
@@ -120,9 +112,7 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("read <issueId>")
-    .description(
-      "Get issue details (supports both UUID and identifier like ZCO-123)",
-    )
+    .description("Get issue details (supports both UUID and identifier like ZCO-123)")
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
@@ -137,9 +127,7 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("update <issueId>")
-    .description(
-      "Update issue (supports both UUID and identifier like ZCO-123)",
-    )
+    .description("Update issue (supports both UUID and identifier like ZCO-123)")
     .option("-t, --title <title>", "new title")
     .option("-d, --description <desc>", "new description")
     .option("-s, --state <stateId>", "new state ID")

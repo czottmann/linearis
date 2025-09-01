@@ -30,10 +30,78 @@ export const GET_ISSUES_QUERY = `
  * Search issues with all relationships in single query
  */
 export const SEARCH_ISSUES_QUERY = `
-  query SearchIssues($query: String!, $first: Int!) {
-    searchIssues(query: $query, first: $first, includeArchived: false) {
+  query SearchIssues($term: String!, $first: Int!) {
+    searchIssues(term: $term, first: $first, includeArchived: false) {
       nodes {
         ${COMPLETE_ISSUE_FRAGMENT}
+      }
+    }
+  }
+`;
+
+/**
+ * Search issues with filters and all relationships in single query
+ */
+export const FILTERED_SEARCH_ISSUES_QUERY = `
+  query FilteredSearchIssues(
+    $first: Int!
+    $filter: IssueFilter
+    $orderBy: PaginationOrderBy
+  ) {
+    issues(
+      first: $first
+      filter: $filter
+      orderBy: $orderBy
+      includeArchived: false
+    ) {
+      nodes {
+        ${COMPLETE_ISSUE_FRAGMENT}
+      }
+    }
+  }
+`;
+
+/**
+ * Batch resolve for search filters
+ */
+export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
+  query BatchResolveForSearch(
+    $teamKey: String
+    $teamName: String
+    $projectName: String
+    $assigneeEmail: String
+  ) {
+    # Resolve team if provided
+    teams(
+      filter: { 
+        or: [
+          { key: { eq: $teamKey } }
+          { name: { eq: $teamName } }
+        ]
+      }
+      first: 1
+    ) {
+      nodes {
+        id
+        key
+        name
+      }
+    }
+    
+    # Resolve project if provided
+    projects(filter: { name: { eq: $projectName } }, first: 1) {
+      nodes {
+        id
+        name
+      }
+    }
+    
+    # Resolve user by email if provided
+    users(filter: { email: { eq: $assigneeEmail } }, first: 1) {
+      nodes {
+        id
+        name
+        email
       }
     }
   }

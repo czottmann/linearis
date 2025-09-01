@@ -1,16 +1,20 @@
 import { GraphQLService } from "./graphql-service.js";
 import {
   BATCH_RESOLVE_FOR_CREATE_QUERY,
+  BATCH_RESOLVE_FOR_SEARCH_QUERY,
   BATCH_RESOLVE_FOR_UPDATE_QUERY,
   CREATE_ISSUE_MUTATION,
+  FILTERED_SEARCH_ISSUES_QUERY,
   GET_ISSUE_BY_ID_QUERY,
   GET_ISSUE_BY_IDENTIFIER_QUERY,
   GET_ISSUES_QUERY,
+  SEARCH_ISSUES_QUERY,
   UPDATE_ISSUE_MUTATION,
 } from "../queries/issues.js";
 import type {
   CreateIssueArgs,
   LinearIssue,
+  SearchIssuesArgs,
   UpdateIssueArgs,
 } from "./linear-types.d.ts";
 import { isUuid } from "./uuid.js";
@@ -391,6 +395,154 @@ export class GraphQLIssuesService {
       }
 
       return this.transformIssueData(createResult.issueCreate.issue);
+    });
+  }
+
+  /**
+   * Search issues with all relationships in optimized GraphQL queries
+   * Reduces from 1 + (6 × N) API calls to 1-2 API calls total
+   *
+   * @param args Search arguments with optional filters
+   */
+  async searchIssues(args: SearchIssuesArgs): Promise<LinearIssue[]> {
+    return timeOperation("issues-search-graphql", "GraphQL", async () => {
+      // Step 1: Resolve filter IDs if needed
+      const resolveVariables: any = {};
+      let needsResolve = false;
+
+      // Parse team if not a UUID
+      if (args.teamId && !isUuid(args.teamId)) {
+        needsResolve = true;
+        // Check if it looks like a team key (short, usually 2-5 chars)
+        if (args.teamId.length <= 5 && /^[A-Z]+$/.test(args.teamId)) {
+          resolveVariables.teamKey = args.teamId;
+        } else {
+          resolveVariables.teamName = args.teamId;
+        }
+      }
+
+      // Add project name for resolution if provided and not a UUID
+      if (args.projectId && !isUuid(args.projectId)) {
+        needsResolve = true;
+        resolveVariables.projectName = args.projectId;
+      }
+
+      // Add assignee email for resolution if provided and not a UUID
+      if (args.assigneeId && !isUuid(args.assigneeId)) {
+        needsResolve = true;
+        // Assume it's an email if it contains @
+        if (args.assigneeId.includes("@")) {
+          resolveVariables.assigneeEmail = args.assigneeId;
+        }
+      }
+
+      // Execute batch resolve query if we have anything to resolve
+      let resolveResult: any = {};
+      if (needsResolve) {
+        resolveResult = await this.graphQLService.rawRequest(
+          BATCH_RESOLVE_FOR_SEARCH_QUERY,
+          resolveVariables,
+        );
+      }
+
+      // Resolve filter IDs
+      let finalTeamId = args.teamId;
+      if (args.teamId && !isUuid(args.teamId)) {
+        if (!resolveResult.teams?.nodes?.length) {
+          throw new Error(`Team "${args.teamId}" not found`);
+        }
+        finalTeamId = resolveResult.teams.nodes[0].id;
+      }
+
+      let finalProjectId = args.projectId;
+      if (args.projectId && !isUuid(args.projectId)) {
+        if (!resolveResult.projects?.nodes?.length) {
+          throw new Error(`Project "${args.projectId}" not found`);
+        }
+        finalProjectId = resolveResult.projects.nodes[0].id;
+      }
+
+      let finalAssigneeId = args.assigneeId;
+      if (
+        args.assigneeId && !isUuid(args.assigneeId) &&
+        args.assigneeId.includes("@")
+      ) {
+        if (!resolveResult.users?.nodes?.length) {
+          throw new Error(`User "${args.assigneeId}" not found`);
+        }
+        finalAssigneeId = resolveResult.users.nodes[0].id;
+      }
+
+      // Step 2: Execute search query
+      if (args.query) {
+        // Use text search
+        const searchResult = await this.graphQLService.rawRequest(
+          SEARCH_ISSUES_QUERY,
+          {
+            term: args.query,
+            first: args.limit || 10,
+          },
+        );
+
+        if (!searchResult.searchIssues?.nodes) {
+          return [];
+        }
+
+        let results = searchResult.searchIssues.nodes.map((issue: any) =>
+          this.transformIssueData(issue)
+        );
+
+        // Apply additional filters if provided
+        if (finalTeamId) {
+          results = results.filter((issue: LinearIssue) =>
+            issue.team.id === finalTeamId
+          );
+        }
+        if (finalAssigneeId) {
+          results = results.filter((issue: LinearIssue) =>
+            issue.assignee?.id === finalAssigneeId
+          );
+        }
+        if (finalProjectId) {
+          results = results.filter((issue: LinearIssue) =>
+            issue.project?.id === finalProjectId
+          );
+        }
+        if (args.states && args.states.length > 0) {
+          results = results.filter((issue: LinearIssue) =>
+            args.states!.includes(issue.state.name)
+          );
+        }
+
+        return results;
+      } else {
+        // Use filtered search
+        const filter: any = {};
+
+        if (finalTeamId) filter.team = { id: { eq: finalTeamId } };
+        if (finalAssigneeId) filter.assignee = { id: { eq: finalAssigneeId } };
+        if (finalProjectId) filter.project = { id: { eq: finalProjectId } };
+        if (args.states && args.states.length > 0) {
+          filter.state = { name: { in: args.states } };
+        }
+
+        const searchResult = await this.graphQLService.rawRequest(
+          FILTERED_SEARCH_ISSUES_QUERY,
+          {
+            first: args.limit || 10,
+            filter: Object.keys(filter).length > 0 ? filter : undefined,
+            orderBy: "updatedAt" as any,
+          },
+        );
+
+        if (!searchResult.issues?.nodes) {
+          return [];
+        }
+
+        return searchResult.issues.nodes.map((issue: any) =>
+          this.transformIssueData(issue)
+        );
+      }
     });
   }
 
