@@ -2,43 +2,6 @@ import { LinearClient } from "@linear/sdk";
 import { CommandOptions, getApiToken } from "./auth.js";
 
 /**
- * Performance timing utility for GraphQL operations
- */
-export class GraphQLTimer {
-  private startTime: number = 0;
-
-  start(): void {
-    this.startTime = performance.now();
-  }
-
-  end(): number {
-    return performance.now() - this.startTime;
-  }
-
-  static async time<T>(
-    operation: string,
-    fn: () => Promise<T>,
-  ): Promise<{ result: T; duration: number }> {
-    const timer = new GraphQLTimer();
-    timer.start();
-    try {
-      const result = await fn();
-      const duration = timer.end();
-      return { result, duration };
-    } catch (error) {
-      const duration = timer.end();
-      console.error(
-        `GraphQL operation "${operation}" failed after ${
-          duration.toFixed(2)
-        }ms:`,
-        error,
-      );
-      throw error;
-    }
-  }
-}
-
-/**
  * GraphQL service wrapper around LinearGraphQLClient
  * Provides optimized direct GraphQL queries with error handling matching LinearService
  */
@@ -69,27 +32,13 @@ export class GraphQLService {
   }
 
   /**
-   * Execute a timed GraphQL query for performance measurement
-   */
-  async timedRequest<T = any>(
-    operationName: string,
-    query: string,
-    variables?: any,
-  ): Promise<{ result: T; duration: number }> {
-    return GraphQLTimer.time(
-      operationName,
-      () => this.rawRequest<T>(query, variables),
-    );
-  }
-
-  /**
    * Execute multiple GraphQL queries in parallel (batching utility)
    */
   async batchRequest<T = any[]>(
     queries: Array<{ name: string; query: string; variables?: any }>,
   ): Promise<T[]> {
     const promises = queries.map(({ name, query, variables }) =>
-      this.timedRequest(name, query, variables).then(({ result }) => result)
+      this.rawRequest<T>(query, variables)
     );
     return Promise.all(promises);
   }
