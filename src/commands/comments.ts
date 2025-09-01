@@ -1,7 +1,6 @@
 import { Command } from "commander";
 import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
-import { isUuid } from "../utils/uuid.js";
 
 /**
  * Setup comments commands on the program
@@ -34,11 +33,7 @@ export function setupCommentsCommands(program: Command): void {
           }
 
           // Resolve issue ID if it's an identifier
-          let resolvedIssueId = issueId;
-          if (!isUuid(issueId)) {
-            const issue = await service.getIssueById(issueId);
-            resolvedIssueId = issue.id;
-          }
+          const resolvedIssueId = await service.resolveIssueId(issueId);
 
           const result = await service.createComment({
             issueId: resolvedIssueId,

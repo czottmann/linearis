@@ -2,13 +2,10 @@ import { LinearClient } from "@linear/sdk";
 import { CommandOptions, getApiToken } from "./auth.js";
 import {
   CreateCommentArgs,
-  CreateIssueArgs,
   LinearComment,
   LinearIssue,
   LinearLabel,
   LinearProject,
-  SearchIssuesArgs,
-  UpdateIssueArgs,
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
 
@@ -131,325 +128,42 @@ export class LinearService {
   }
 
   /**
-   * Get issues with optional limit
+   * Resolve issue identifier to UUID (lightweight version for ID-only resolution)
    */
-  async getIssues(limit: number = 25): Promise<LinearIssue[]> {
-    const issues = await this.client.issues({
-      first: limit,
-      orderBy: "updatedAt" as any,
-      includeArchived: false,
-    });
-
-    // Fetch relationships in parallel for all issues
-    const issuePromises = issues.nodes.map(
-      async (issue): Promise<LinearIssue | null> => {
-        const [state, assignee, team, project, labels] = await Promise.all([
-          issue.state,
-          issue.assignee,
-          issue.team,
-          issue.project,
-          issue.labels(),
-        ]);
-
-        // Skip issues without required data
-        if (!state || !team) {
-          return null;
-        }
-
-        return {
-          id: issue.id,
-          identifier: issue.identifier,
-          title: issue.title,
-          description: issue.description,
-          priority: issue.priority,
-          estimate: issue.estimate,
-          createdAt: issue.createdAt.toISOString(),
-          updatedAt: issue.updatedAt.toISOString(),
-          state: {
-            id: state.id,
-            name: state.name,
-          },
-          assignee: assignee
-            ? {
-              id: assignee.id,
-              name: assignee.name,
-            }
-            : undefined,
-          team: {
-            id: team.id,
-            key: team.key,
-            name: team.name,
-          },
-          project: project
-            ? {
-              id: project.id,
-              name: project.name,
-            }
-            : undefined,
-          labels: labels.nodes.map((label) => ({
-            id: label.id,
-            name: label.name,
-          })),
-        } as LinearIssue;
-      },
-    );
-
-    const results = await Promise.all(issuePromises);
-    return results.filter((issue): issue is LinearIssue => issue !== null);
-  }
-
-  /**
-   * Search issues with filters
-   */
-  async searchIssues(args: SearchIssuesArgs): Promise<LinearIssue[]> {
-    // Use Linear's native search if query is provided
-    if (args.query) {
-      const searchResults = await this.client.searchIssues(args.query, {
-        first: args.limit || 10,
-        includeArchived: false,
-      });
-
-      // Fetch all relationships in parallel for all issues
-      const issuesWithData = await Promise.all(
-        searchResults.nodes.map(async (searchResult) => {
-          // Fetch the full issue object to get all relationships including labels
-          const fullIssue = await this.client.issue(searchResult.id);
-          const [state, team, assignee, project, labels] = await Promise.all([
-            fullIssue.state,
-            fullIssue.team,
-            fullIssue.assignee,
-            fullIssue.project,
-            fullIssue.labels(),
-          ]);
-          return { issue: fullIssue, state, team, assignee, project, labels };
-        }),
-      );
-
-      let results = issuesWithData.map((
-        { issue, state, team, assignee, project, labels },
-      ) =>
-        transformIssueData({
-          ...issue,
-          state,
-          team,
-          assignee,
-          project,
-          labels,
-        })
-      );
-
-      // Apply additional filters if provided
-      if (args.teamId) {
-        results = results.filter((issue) => issue.team.id === args.teamId);
-      }
-      if (args.assigneeId) {
-        results = results.filter((issue) =>
-          issue.assignee?.id === args.assigneeId
-        );
-      }
-      if (args.projectId) {
-        results = results.filter((issue) =>
-          issue.project?.id === args.projectId
-        );
-      }
-      if (args.states && args.states.length > 0) {
-        results = results.filter((issue) =>
-          args.states!.includes(issue.state.name)
-        );
-      }
-
-      return results;
-    }
-
-    // Fallback to filter-based search when no query is provided
-    const filter: any = {};
-
-    if (args.teamId) filter.team = { id: { eq: args.teamId } };
-    if (args.assigneeId) filter.assignee = { id: { eq: args.assigneeId } };
-    if (args.projectId) filter.project = { id: { eq: args.projectId } };
-    if (args.states && args.states.length > 0) {
-      filter.state = { name: { in: args.states } };
-    }
-
-    const issues = await this.client.issues({
-      first: args.limit || 10,
-      filter: Object.keys(filter).length > 0 ? filter : undefined,
-      orderBy: "updatedAt" as any,
-      includeArchived: false,
-    });
-
-    // Fetch all relationships in parallel for all issues
-    const issuesWithData = await Promise.all(
-      issues.nodes.map(async (issue) => {
-        const [state, team, assignee, project, labels] = await Promise.all([
-          issue.state,
-          issue.team,
-          issue.assignee,
-          issue.project,
-          issue.labels(),
-        ]);
-        return { issue, state, team, assignee, project, labels };
-      }),
-    );
-
-    const results = issuesWithData.map((
-      { issue, state, team, assignee, project, labels },
-    ) =>
-      transformIssueData({
-        ...issue,
-        state,
-        team,
-        assignee,
-        project,
-        labels,
-      })
-    );
-
-    return results;
-  }
-
-  /**
-   * Get issue by ID (supports both UUID and identifier like ZCO-123)
-   */
-  async getIssueById(issueId: string): Promise<LinearIssue> {
-    let issue;
-
-    // Check if it's a UUID (36 chars with dashes) or identifier (like ZCO-123)
+  async resolveIssueId(issueId: string): Promise<string> {
+    // Return UUID as-is
     if (isUuid(issueId)) {
-      issue = await this.client.issue(issueId);
-    } else {
-      // Try to find by identifier - parse team key and issue number
-      const parts = issueId.split("-");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
-        );
-      }
-
-      const teamKey = parts[0];
-      const issueNumber = parseInt(parts[1]);
-
-      if (isNaN(issueNumber)) {
-        throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-      }
-
-      const issues = await this.client.issues({
-        filter: {
-          number: { eq: issueNumber },
-          team: { key: { eq: teamKey } },
-        },
-        first: 1,
-      });
-
-      if (issues.nodes.length === 0) {
-        throw new Error(`Issue with identifier "${issueId}" not found`);
-      }
-      issue = issues.nodes[0];
+      return issueId;
     }
 
-    // Fetch all relationships in parallel
-    const [state, team, assignee, project, labels, comments] = await Promise
-      .all([
-        issue.state,
-        issue.team,
-        issue.assignee,
-        issue.project,
-        issue.labels(),
-        issue.comments(),
-      ]);
-
-    // Process comments for inclusion
-    const processedComments = await Promise.all(
-      comments.nodes.map(async (comment: any) => {
-        const user = await comment.user;
-        return {
-          id: comment.id,
-          body: comment.body,
-          user: {
-            id: user.id,
-            name: user.name,
-          },
-          createdAt: comment.createdAt,
-          updatedAt: comment.updatedAt,
-        };
-      }),
-    );
-
-    return transformIssueData({
-      ...issue,
-      state,
-      team,
-      assignee,
-      project,
-      labels,
-      comments: processedComments,
-    }, true);
-  }
-
-  /**
-   * Create new issue
-   */
-  async createIssue(args: CreateIssueArgs): Promise<LinearIssue> {
-    // If teamId is not provided, try to get user's first team
-    let teamId = args.teamId;
-    if (!teamId) {
-      const me = await this.client.viewer;
-      const teams = await me.teams();
-      if (teams.nodes.length === 0) {
-        throw new Error("No teams found. Please specify a team ID.");
-      }
-      teamId = teams.nodes[0].id;
+    // Parse identifier (ZCO-123 format) and resolve to UUID
+    const parts = issueId.split("-");
+    if (parts.length !== 2) {
+      throw new Error(
+        `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
+      );
     }
 
-    const payload = await this.client.createIssue({
-      title: args.title,
-      teamId: teamId,
-      description: args.description,
-      assigneeId: args.assigneeId,
-      priority: args.priority,
-      projectId: args.projectId,
-      stateId: args.stateId,
-      labelIds: args.labelIds,
-      estimate: args.estimate,
-      parentId: args.parentId,
-      projectMilestoneId: args.milestoneId,
+    const teamKey = parts[0];
+    const issueNumber = parseInt(parts[1]);
+
+    if (isNaN(issueNumber)) {
+      throw new Error(`Invalid issue number in identifier: "${issueId}"`);
+    }
+
+    const issues = await this.client.issues({
+      filter: {
+        number: { eq: issueNumber },
+        team: { key: { eq: teamKey } },
+      },
+      first: 1,
     });
 
-    if (!payload.success) {
-      throw new Error("Failed to create issue");
+    if (issues.nodes.length === 0) {
+      throw new Error(`Issue with identifier "${issueId}" not found`);
     }
 
-    // Fetch the created issue to return full data
-    const issue = await payload.issue;
-    if (!issue) {
-      throw new Error("Failed to retrieve created issue");
-    }
-
-    return this.getIssueById(issue.id);
-  }
-
-  /**
-   * Update existing issue
-   */
-  async updateIssue(args: UpdateIssueArgs): Promise<LinearIssue> {
-    const payload = await this.client.updateIssue(args.id, {
-      title: args.title,
-      description: args.description,
-      stateId: args.stateId,
-      priority: args.priority,
-      assigneeId: args.assigneeId,
-      projectId: args.projectId,
-      labelIds: args.labelIds,
-      estimate: args.estimate,
-      parentId: args.parentId,
-    });
-
-    if (!payload.success) {
-      throw new Error("Failed to update issue");
-    }
-
-    // Fetch the updated issue to return full data
-    return this.getIssueById(args.id);
+    return issues.nodes[0].id;
   }
 
   /**
@@ -497,107 +211,6 @@ export class LinearService {
   }
 
   /**
-   * Resolve project name to project ID
-   */
-  async resolveProjectId(projectNameOrId: string): Promise<string> {
-    // Use generic ID resolver
-    const resolved = resolveId(projectNameOrId);
-    if (resolved === projectNameOrId && isUuid(projectNameOrId)) {
-      return projectNameOrId;
-    }
-
-    // Search for project by name
-    const project = await executeLinearQuery(
-      () =>
-        this.client.projects({
-          filter: buildEqualityFilter("name", projectNameOrId),
-          first: 1,
-        }),
-      "Project",
-      projectNameOrId,
-    );
-
-    return project.id;
-  }
-
-  /**
-   * Resolve label names to label IDs
-   * Supports:
-   * - Direct label names: "Bug"
-   * - Group/label syntax: "Plumbing/Tooling"
-   * - UUIDs: "uuid-string"
-   */
-  async resolveLabelIds(labelNamesOrIds: string[]): Promise<string[]> {
-    const results: string[] = [];
-
-    for (const label of labelNamesOrIds) {
-      // Use generic ID resolver
-      const resolved = resolveId(label);
-      if (resolved === label && isUuid(label)) {
-        results.push(label);
-        continue;
-      }
-
-      // Check if this is a group/label syntax (e.g., "Plumbing/Tooling")
-      if (label.includes("/")) {
-        const [groupName, labelName] = label.split("/", 2);
-
-        if (!groupName || !labelName) {
-          throw new Error(
-            `Invalid group/label syntax: "${label}". Expected format: "GroupName/LabelName"`,
-          );
-        }
-
-        // First find the group label
-        const groupLabel = await executeLinearQuery(
-          () =>
-            this.client.issueLabels({
-              filter: {
-                ...buildEqualityFilter("name", groupName),
-                isGroup: { eq: true },
-              },
-              first: 1,
-            }),
-          "Label group",
-          groupName,
-        );
-
-        // Now find the child label within that group
-        const childLabel = await executeLinearQuery(
-          () =>
-            this.client.issueLabels({
-              filter: {
-                ...buildEqualityFilter("name", labelName),
-                parent: { id: { eq: groupLabel.id } },
-              },
-              first: 1,
-            }),
-          "Label",
-          `${labelName} in group ${groupName}`,
-        );
-
-        results.push(childLabel.id);
-        continue;
-      }
-
-      // Search for label by name (direct match)
-      const labelResult = await executeLinearQuery(
-        () =>
-          this.client.issueLabels({
-            filter: buildEqualityFilter("name", label),
-            first: 1,
-          }),
-        "Label",
-        label,
-      );
-
-      results.push(labelResult.id);
-    }
-
-    return results;
-  }
-
-  /**
    * Resolve team key or name to team ID
    */
   async resolveTeamId(teamKeyOrNameOrId: string): Promise<string> {
@@ -632,34 +245,6 @@ export class LinearService {
       );
       return team.id;
     }
-  }
-
-  /**
-   * Resolve milestone name to milestone ID within a project
-   */
-  async resolveMilestoneId(
-    milestoneNameOrId: string,
-    projectId: string,
-  ): Promise<string> {
-    // Use generic ID resolver
-    const resolved = resolveId(milestoneNameOrId);
-    if (resolved === milestoneNameOrId && isUuid(milestoneNameOrId)) {
-      return milestoneNameOrId;
-    }
-
-    // Search for milestone by name within the specified project
-    const project = await this.client.project(projectId);
-    const milestone = await executeLinearQuery(
-      () =>
-        project.projectMilestones({
-          filter: buildEqualityFilter("name", milestoneNameOrId),
-          first: 1,
-        }),
-      "Milestone",
-      `${milestoneNameOrId} in project`,
-    );
-
-    return milestone.id;
   }
 
   /**
