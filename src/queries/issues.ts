@@ -137,6 +137,81 @@ export const RESOLVE_LABELS_QUERY = `
 `;
 
 /**
+ * Batch resolve project by name
+ */
+export const RESOLVE_PROJECT_BY_NAME_QUERY = `
+  query ResolveProjectByName($name: String!) {
+    projects(filter: { name: { eq: $name } }, first: 1) {
+      nodes {
+        id
+        name
+      }
+    }
+  }
+`;
+
+/**
+ * Comprehensive batch resolve for update operations
+ */
+export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
+  query BatchResolveForUpdate(
+    $labelNames: [String!]
+    $projectName: String
+    $teamKey: String
+    $issueNumber: Float
+  ) {
+    # Resolve labels if provided
+    labels: issueLabels(filter: { name: { in: $labelNames } }) {
+      nodes {
+        id
+        name
+        isGroup
+        parent {
+          id
+          name
+        }
+        children {
+          nodes {
+            id
+            name
+          }
+        }
+      }
+    }
+    
+    # Resolve project if provided
+    projects(filter: { name: { eq: $projectName } }, first: 1) {
+      nodes {
+        id
+        name
+      }
+    }
+    
+    # Resolve issue by identifier if needed
+    issues(
+      filter: {
+        and: [
+          { team: { key: { eq: $teamKey } } }
+          { number: { eq: $issueNumber } }
+        ]
+      }
+      first: 1
+    ) {
+      nodes {
+        id
+        identifier
+        labels {
+          nodes {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
  * Create issue mutation with complete response
  */
 export const CREATE_ISSUE_MUTATION = `

@@ -1,9 +1,11 @@
 import { GraphQLService } from "./graphql-service.js";
 import {
+  BATCH_RESOLVE_FOR_UPDATE_QUERY,
   GET_ISSUE_BY_ID_QUERY,
   GET_ISSUE_BY_IDENTIFIER_QUERY,
+  UPDATE_ISSUE_MUTATION,
 } from "../queries/issues.js";
-import { LinearIssue } from "./linear-types.d.ts";
+import { LinearIssue, UpdateIssueArgs } from "./linear-types.d.ts";
 import { isUuid } from "./uuid.js";
 import { timeOperation } from "./performance.js";
 
@@ -66,6 +68,153 @@ export class GraphQLIssuesService {
 
       // Transform GraphQL response to LinearIssue format
       return this.transformIssueData(issueData);
+    });
+  }
+
+  /**
+   * Update issue with all relationships in optimized GraphQL queries
+   * Reduces from 5 API calls to 2 API calls (resolve + update)
+   *
+   * @param args Update arguments (supports label names and handles adding vs overwriting modes)
+   * @param labelMode How to handle labels: 'adding' (merge with existing) or 'overwriting' (replace all)
+   */
+  async updateIssue(
+    args: UpdateIssueArgs,
+    labelMode: "adding" | "overwriting" = "overwriting",
+  ): Promise<LinearIssue> {
+    return timeOperation("issues-update-graphql", "GraphQL", async () => {
+      let resolvedIssueId = args.id;
+      let currentIssueLabels: string[] = [];
+
+      // Step 1: Batch resolve all IDs and get current issue data if needed
+      const resolveVariables: any = {};
+
+      // Parse issue ID if it's an identifier
+      if (!isUuid(args.id)) {
+        const parts = args.id.split("-");
+        if (parts.length !== 2) {
+          throw new Error(
+            `Invalid issue identifier format: "${args.id}". Expected format: TEAM-123`,
+          );
+        }
+        resolveVariables.teamKey = parts[0];
+        resolveVariables.issueNumber = parseInt(parts[1]);
+
+        if (isNaN(resolveVariables.issueNumber)) {
+          throw new Error(`Invalid issue number in identifier: "${args.id}"`);
+        }
+      }
+
+      // Add label names for resolution if provided
+      if (args.labelIds && Array.isArray(args.labelIds)) {
+        // Filter out UUIDs and collect label names for resolution
+        const labelNames = args.labelIds.filter((id) => !isUuid(id));
+        if (labelNames.length > 0) {
+          resolveVariables.labelNames = labelNames;
+        }
+      }
+
+      // Add project name for resolution if provided and not a UUID
+      if (args.projectId && !isUuid(args.projectId)) {
+        resolveVariables.projectName = args.projectId;
+      }
+
+      // Execute batch resolve query
+      const resolveResult = await this.graphQLService.rawRequest(
+        BATCH_RESOLVE_FOR_UPDATE_QUERY,
+        resolveVariables,
+      );
+
+      // Process resolution results
+      if (!isUuid(args.id)) {
+        if (!resolveResult.issues.nodes.length) {
+          throw new Error(`Issue with identifier "${args.id}" not found`);
+        }
+        resolvedIssueId = resolveResult.issues.nodes[0].id;
+        currentIssueLabels = resolveResult.issues.nodes[0].labels.nodes.map((
+          l: any,
+        ) => l.id);
+      }
+
+      // Resolve label IDs
+      let finalLabelIds = args.labelIds;
+      if (args.labelIds && Array.isArray(args.labelIds)) {
+        const resolvedLabels: string[] = [];
+
+        // Process each label ID/name
+        for (const labelIdOrName of args.labelIds) {
+          if (isUuid(labelIdOrName)) {
+            resolvedLabels.push(labelIdOrName);
+          } else {
+            // Find resolved label
+            const label = resolveResult.labels.nodes.find((l: any) =>
+              l.name === labelIdOrName
+            );
+            if (!label) {
+              throw new Error(`Label "${labelIdOrName}" not found`);
+            }
+            resolvedLabels.push(label.id);
+          }
+        }
+
+        // Handle adding vs overwriting modes
+        if (labelMode === "adding") {
+          // Merge with current labels (if we have them)
+          finalLabelIds = [
+            ...new Set([...currentIssueLabels, ...resolvedLabels]),
+          ];
+        } else {
+          // Overwrite mode - replace all existing labels
+          finalLabelIds = resolvedLabels;
+        }
+      }
+
+      // Resolve project ID
+      let finalProjectId = args.projectId;
+      if (args.projectId && !isUuid(args.projectId)) {
+        if (!resolveResult.projects.nodes.length) {
+          throw new Error(`Project "${args.projectId}" not found`);
+        }
+        finalProjectId = resolveResult.projects.nodes[0].id;
+      }
+
+      // Step 2: Execute update mutation with resolved IDs
+      const updateInput: any = {};
+
+      if (args.title !== undefined) updateInput.title = args.title;
+      if (args.description !== undefined) {
+        updateInput.description = args.description;
+      }
+      if (args.stateId !== undefined) updateInput.stateId = args.stateId;
+      if (args.priority !== undefined) updateInput.priority = args.priority;
+      if (args.assigneeId !== undefined) {
+        updateInput.assigneeId = args.assigneeId;
+      }
+      if (finalProjectId !== undefined) updateInput.projectId = finalProjectId;
+      if (args.estimate !== undefined) updateInput.estimate = args.estimate;
+      if (args.parentId !== undefined) updateInput.parentId = args.parentId;
+
+      if (finalLabelIds !== undefined) {
+        updateInput.labelIds = finalLabelIds;
+      }
+
+      const updateResult = await this.graphQLService.rawRequest(
+        UPDATE_ISSUE_MUTATION,
+        {
+          id: resolvedIssueId,
+          input: updateInput,
+        },
+      );
+
+      if (!updateResult.issueUpdate.success) {
+        throw new Error("Failed to update issue");
+      }
+
+      if (!updateResult.issueUpdate.issue) {
+        throw new Error("Failed to retrieve updated issue");
+      }
+
+      return this.transformIssueData(updateResult.issueUpdate.issue);
     });
   }
 

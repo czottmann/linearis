@@ -221,10 +221,6 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (issueId: string, options: any, command: Command) => {
-          const service = await createLinearService(
-            command.parent!.parent!.opts(),
-          );
-
           // Check for mutually exclusive parent flags
           if (options.parentTicket && options.clearParentTicket) {
             throw new Error(
@@ -261,80 +257,41 @@ export function setupIssuesCommands(program: Command): void {
             );
           }
 
-          // Resolve issue ID if it's an identifier
-          let resolvedIssueId = issueId;
-          if (!isUuid(issueId)) {
-            const issue = await service.getIssueById(issueId);
-            resolvedIssueId = issue.id;
-          }
+          // Use optimized GraphQL implementation
+          const graphQLService = await createGraphQLService(
+            command.parent!.parent!.opts(),
+          );
+          const issuesService = new GraphQLIssuesService(graphQLService);
 
-          // Resolve project if provided
-          let projectId = options.project;
-          if (projectId) {
-            projectId = await service.resolveProjectId(projectId);
-          }
-
-          // Handle label operations
+          // Prepare update arguments for GraphQL service
           let labelIds: string[] | undefined;
           if (options.clearLabels) {
-            // Clear all labels - pass empty array
             labelIds = [];
           } else if (options.labels) {
-            // Parse and resolve provided labels
             const labelNames = options.labels.split(",").map((l: string) =>
               l.trim()
             );
-            const newLabelIds = await service.resolveLabelIds(labelNames);
-
-            // Determine the operation mode
-            const labelMode = options.labelBy || "adding"; // Default to "adding"
-
-            if (labelMode === "overwriting") {
-              // Overwrite mode - replace all existing labels
-              labelIds = newLabelIds;
-            } else {
-              // Add mode - add to existing labels (default behavior)
-              const currentIssue = await service.getIssueById(resolvedIssueId);
-              const currentLabelIds = currentIssue.labels.map((label) =>
-                label.id
-              );
-
-              // Merge and deduplicate
-              const mergedLabels = [...currentLabelIds, ...newLabelIds];
-              labelIds = [...new Set(mergedLabels)];
-            }
-          }
-
-          // Handle parent ticket resolution
-          let parentId: string | undefined = undefined;
-          if (options.parentTicket) {
-            // If it's not a UUID, try to resolve it as an identifier
-            if (!isUuid(options.parentTicket)) {
-              const parentIssue = await service.getIssueById(
-                options.parentTicket,
-              );
-              parentId = parentIssue.id;
-            } else {
-              parentId = options.parentTicket;
-            }
-          } else if (options.clearParentTicket) {
-            // Setting parentId to null clears the parent relationship
-            parentId = null as any;
+            labelIds = labelNames;
           }
 
           const updateArgs = {
-            id: resolvedIssueId,
+            id: issueId, // GraphQL service handles ID resolution
             title: options.title,
             description: options.description,
             stateId: options.state,
             priority: options.priority ? parseInt(options.priority) : undefined,
             assigneeId: options.assignee,
-            projectId,
+            projectId: options.project, // GraphQL service handles project resolution
             labelIds,
-            parentId,
+            parentId: options.parentTicket ||
+              (options.clearParentTicket ? null : undefined),
           };
 
-          const result = await service.updateIssue(updateArgs);
+          const labelMode = options.labelBy || "adding";
+          const result = await issuesService.updateIssue(
+            updateArgs,
+            labelMode as "adding" | "overwriting",
+          );
           outputSuccess(result);
         },
       ),
