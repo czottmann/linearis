@@ -6,7 +6,7 @@ import {
   GET_ISSUES_QUERY,
   UPDATE_ISSUE_MUTATION,
 } from "../queries/issues.js";
-import { LinearIssue, UpdateIssueArgs } from "./linear-types.d.ts";
+import type { LinearIssue, UpdateIssueArgs } from "./linear-types.d.ts";
 import { isUuid } from "./uuid.js";
 import { timeOperation } from "./performance.js";
 
