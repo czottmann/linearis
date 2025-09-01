@@ -15,7 +15,7 @@ export const GET_ISSUES_QUERY = `
     issues(
       first: $first
       orderBy: $orderBy
-      filter: { 
+      filter: {
         state: { type: { neq: "completed" } }
       }
     ) {
@@ -73,7 +73,7 @@ export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
   ) {
     # Resolve team if provided
     teams(
-      filter: { 
+      filter: {
         or: [
           { key: { eq: $teamKey } }
           { name: { eq: $teamName } }
@@ -87,7 +87,7 @@ export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
         name
       }
     }
-    
+
     # Resolve project if provided
     projects(filter: { name: { eq: $projectName } }, first: 1) {
       nodes {
@@ -95,7 +95,7 @@ export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
         name
       }
     }
-    
+
     # Resolve user by email if provided
     users(filter: { email: { eq: $assigneeEmail } }, first: 1) {
       nodes {
@@ -138,87 +138,6 @@ export const GET_ISSUE_BY_IDENTIFIER_QUERY = `
 `;
 
 /**
- * Batch resolve IDs for issue operations
- */
-export const BATCH_RESOLVE_IDS_QUERY = `
-  query BatchResolveIds(
-    $teamKeys: [String!]
-    $teamNames: [String!]
-    $projectNames: [String!]
-    $labelNames: [String!]
-  ) {
-    teams(filter: { 
-      or: [
-        { key: { in: $teamKeys } }
-        { name: { in: $teamNames } }
-      ]
-    }) {
-      nodes {
-        id
-        key
-        name
-      }
-    }
-    projects(filter: { name: { in: $projectNames } }) {
-      nodes {
-        id
-        name
-      }
-    }
-    issueLabels(filter: { name: { in: $labelNames } }) {
-      nodes {
-        id
-        name
-      }
-    }
-  }
-`;
-
-/**
- * Batch resolve labels by name (including group/label syntax)
- */
-export const RESOLVE_LABELS_QUERY = `
-  query ResolveLabels($labelNames: [String!], $groupNames: [String!]) {
-    issueLabels(filter: { 
-      or: [
-        { name: { in: $labelNames } }
-        { and: [
-            { name: { in: $groupNames } }
-            { isGroup: { eq: true } }
-          ]
-        }
-      ]
-    }) {
-      nodes {
-        id
-        name
-        isGroup
-        children {
-          nodes {
-            id
-            name
-          }
-        }
-      }
-    }
-  }
-`;
-
-/**
- * Batch resolve project by name
- */
-export const RESOLVE_PROJECT_BY_NAME_QUERY = `
-  query ResolveProjectByName($name: String!) {
-    projects(filter: { name: { eq: $name } }, first: 1) {
-      nodes {
-        id
-        name
-      }
-    }
-  }
-`;
-
-/**
  * Comprehensive batch resolve for update operations
  */
 export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
@@ -246,7 +165,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
         }
       }
     }
-    
+
     # Resolve project if provided
     projects(filter: { name: { eq: $projectName } }, first: 1) {
       nodes {
@@ -254,7 +173,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
         name
       }
     }
-    
+
     # Resolve issue by identifier if needed
     issues(
       filter: {
@@ -321,7 +240,7 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
   ) {
     # Resolve team if provided
     teams(
-      filter: { 
+      filter: {
         or: [
           { key: { eq: $teamKey } }
           { name: { eq: $teamName } }
@@ -335,7 +254,7 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
         name
       }
     }
-    
+
     # Resolve project if provided
     projects(filter: { name: { eq: $projectName } }, first: 1) {
       nodes {
@@ -343,7 +262,7 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
         name
       }
     }
-    
+
     # Resolve labels if provided
     labels: issueLabels(filter: { name: { in: $labelNames } }) {
       nodes {
@@ -362,7 +281,7 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
         }
       }
     }
-    
+
     # Resolve parent issue if provided
     parentIssues: issues(
       filter: {
