@@ -202,6 +202,66 @@ export class LinearService {
    * Search issues with filters
    */
   async searchIssues(args: SearchIssuesArgs): Promise<LinearIssue[]> {
+    // Use Linear's native search if query is provided
+    if (args.query) {
+      const searchResults = await this.client.searchIssues(args.query, {
+        first: args.limit || 10,
+        includeArchived: false,
+      });
+
+      // Fetch all relationships in parallel for all issues
+      const issuesWithData = await Promise.all(
+        searchResults.nodes.map(async (searchResult) => {
+          // Fetch the full issue object to get all relationships including labels
+          const fullIssue = await this.client.issue(searchResult.id);
+          const [state, team, assignee, project, labels] = await Promise.all([
+            fullIssue.state,
+            fullIssue.team,
+            fullIssue.assignee,
+            fullIssue.project,
+            fullIssue.labels(),
+          ]);
+          return { issue: fullIssue, state, team, assignee, project, labels };
+        }),
+      );
+
+      let results = issuesWithData.map((
+        { issue, state, team, assignee, project, labels },
+      ) =>
+        transformIssueData({
+          ...issue,
+          state,
+          team,
+          assignee,
+          project,
+          labels,
+        })
+      );
+
+      // Apply additional filters if provided
+      if (args.teamId) {
+        results = results.filter((issue) => issue.team.id === args.teamId);
+      }
+      if (args.assigneeId) {
+        results = results.filter((issue) =>
+          issue.assignee?.id === args.assigneeId
+        );
+      }
+      if (args.projectId) {
+        results = results.filter((issue) =>
+          issue.project?.id === args.projectId
+        );
+      }
+      if (args.states && args.states.length > 0) {
+        results = results.filter((issue) =>
+          args.states!.includes(issue.state.name)
+        );
+      }
+
+      return results;
+    }
+
+    // Fallback to filter-based search when no query is provided
     const filter: any = {};
 
     if (args.teamId) filter.team = { id: { eq: args.teamId } };
@@ -232,7 +292,7 @@ export class LinearService {
       }),
     );
 
-    let results = issuesWithData.map((
+    const results = issuesWithData.map((
       { issue, state, team, assignee, project, labels },
     ) =>
       transformIssueData({
@@ -244,16 +304,6 @@ export class LinearService {
         labels,
       })
     );
-
-    // Apply text search if query is provided
-    if (args.query) {
-      const queryLower = args.query.toLowerCase();
-      results = results.filter((issue) =>
-        issue.title.toLowerCase().includes(queryLower) ||
-        (issue.description &&
-          issue.description.toLowerCase().includes(queryLower))
-      );
-    }
 
     return results;
   }
@@ -663,10 +713,6 @@ export class LinearService {
       const allLabels = await this.client.issueLabels({
         first: 100,
       });
-
-      // Get all teams to determine which labels are team-specific
-      const teams = await this.client.teams({ first: 50 });
-      const teamMap = new Map(teams.nodes.map((team) => [team.id, team]));
 
       for (const label of allLabels.nodes) {
         // Skip group labels (isGroup: true) as they're containers, not actual labels
