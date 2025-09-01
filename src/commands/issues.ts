@@ -22,8 +22,9 @@ export function setupIssuesCommands(program: Command): void {
     .description("List issues")
     .option("-l, --limit <number>", "limit results", "25")
     .action(handleAsyncCommand(async (options: any, command: Command) => {
-      const service = await createLinearService(command.parent!.parent!.opts());
-      const result = await service.getIssues(parseInt(options.limit));
+      const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
+      const issuesService = new GraphQLIssuesService(graphQLService);
+      const result = await issuesService.getIssues(parseInt(options.limit));
       outputSuccess(result);
     }));
 
@@ -157,10 +158,7 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
-          // Use optimized GraphQL implementation
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
-          );
+          const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
           const issuesService = new GraphQLIssuesService(graphQLService);
           const result = await issuesService.getIssueById(issueId);
           outputSuccess(result);
@@ -230,10 +228,7 @@ export function setupIssuesCommands(program: Command): void {
             );
           }
 
-          // Use optimized GraphQL implementation
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
-          );
+          const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
           const issuesService = new GraphQLIssuesService(graphQLService);
 
           // Prepare update arguments for GraphQL service

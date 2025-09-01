@@ -3,6 +3,7 @@ import {
   BATCH_RESOLVE_FOR_UPDATE_QUERY,
   GET_ISSUE_BY_ID_QUERY,
   GET_ISSUE_BY_IDENTIFIER_QUERY,
+  GET_ISSUES_QUERY,
   UPDATE_ISSUE_MUTATION,
 } from "../queries/issues.js";
 import { LinearIssue, UpdateIssueArgs } from "./linear-types.d.ts";
@@ -14,6 +15,28 @@ import { timeOperation } from "./performance.js";
  */
 export class GraphQLIssuesService {
   constructor(private graphQLService: GraphQLService) {}
+
+  /**
+   * Get issues list with all relationships in single query
+   * Reduces from 1 + (5 × N issues) API calls to 1 API call
+   */
+  async getIssues(limit: number = 25): Promise<LinearIssue[]> {
+    return timeOperation("issues-list-graphql", "GraphQL", async () => {
+      const result = await this.graphQLService.rawRequest(GET_ISSUES_QUERY, {
+        first: limit,
+        orderBy: "updatedAt" as any,
+      });
+
+      if (!result.issues?.nodes) {
+        return [];
+      }
+
+      // Transform all issues using the same transformation logic
+      return result.issues.nodes.map((issue: any) =>
+        this.transformIssueData(issue)
+      );
+    });
+  }
 
   /**
    * Get issue by ID with all relationships and comments in single query
