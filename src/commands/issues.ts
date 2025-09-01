@@ -175,12 +175,21 @@ export function setupIssuesCommands(program: Command): void {
     .option("--assignee <assigneeId>", "new assignee ID")
     .option("--project <project>", "new project (name or ID)")
     .option("--labels <labels>", "new labels (comma-separated names or IDs)")
+    .option("--parent-ticket <parentId>", "set parent issue ID or identifier")
+    .option("--clear-parent-ticket", "clear existing parent relationship")
     .action(
       handleAsyncCommand(
         async (issueId: string, options: any, command: Command) => {
           const service = await createLinearService(
             command.parent!.parent!.opts(),
           );
+
+          // Check for mutually exclusive parent flags
+          if (options.parentTicket && options.clearParentTicket) {
+            throw new Error(
+              "Cannot use --parent-ticket and --clear-parent-ticket together",
+            );
+          }
 
           // Resolve issue ID if it's an identifier
           let resolvedIssueId = issueId;
@@ -204,6 +213,23 @@ export function setupIssuesCommands(program: Command): void {
             labelIds = await service.resolveLabelIds(labelNames);
           }
 
+          // Handle parent ticket resolution
+          let parentId: string | undefined = undefined;
+          if (options.parentTicket) {
+            // If it's not a UUID, try to resolve it as an identifier
+            if (!isUuid(options.parentTicket)) {
+              const parentIssue = await service.getIssueById(
+                options.parentTicket,
+              );
+              parentId = parentIssue.id;
+            } else {
+              parentId = options.parentTicket;
+            }
+          } else if (options.clearParentTicket) {
+            // Setting parentId to null clears the parent relationship
+            parentId = null as any;
+          }
+
           const updateArgs = {
             id: resolvedIssueId,
             title: options.title,
@@ -213,6 +239,7 @@ export function setupIssuesCommands(program: Command): void {
             assigneeId: options.assignee,
             projectId,
             labelIds,
+            parentId,
           };
 
           const result = await service.updateIssue(updateArgs);

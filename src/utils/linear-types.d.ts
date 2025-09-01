@@ -84,6 +84,7 @@ export interface UpdateIssueArgs {
   projectId?: string;
   labelIds?: string[];
   estimate?: number;
+  parentId?: string;
 }
 
 export interface SearchIssuesArgs {

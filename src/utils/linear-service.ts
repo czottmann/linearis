@@ -389,6 +389,7 @@ export class LinearService {
       projectId: args.projectId,
       labelIds: args.labelIds,
       estimate: args.estimate,
+      parentId: args.parentId,
     });
 
     if (!payload.success) {
