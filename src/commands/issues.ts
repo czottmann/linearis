@@ -17,7 +17,7 @@ export function setupIssuesCommands(program: Command): void {
   });
 
   issues.command("list")
-    .description("List issues")
+    .description("List issues.")
     .option("-l, --limit <number>", "limit results", "25")
     .action(
       handleAsyncCommand(
@@ -33,7 +33,7 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("search <query>")
-    .description("Search issues")
+    .description("Search issues.")
     .option("--team <team>", "filter by team key, name, or ID")
     .option("--assignee <assigneeId>", "filter by assignee ID")
     .option("--project <project>", "filter by project name or ID")
@@ -62,7 +62,7 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("create <title>")
-    .description("Create new issue")
+    .description("Create new issue.")
     .option("-d, --description <desc>", "issue description")
     .option("-a, --assignee <assigneeId>", "assign to user ID")
     .option("-p, --priority <priority>", "priority level (1-4)")
@@ -112,7 +112,8 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("read <issueId>")
-    .description("Get issue details (supports both UUID and identifier like ZCO-123)")
+    .description("Get issue details.")
+    .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
@@ -127,7 +128,8 @@ export function setupIssuesCommands(program: Command): void {
     );
 
   issues.command("update <issueId>")
-    .description("Update issue (supports both UUID and identifier like ZCO-123)")
+    .description("Update an issue.")
+    .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
     .option("-t, --title <title>", "new title")
     .option("-d, --description <desc>", "new description")
     .option("-s, --state <stateId>", "new state ID")

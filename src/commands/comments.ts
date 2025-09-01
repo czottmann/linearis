@@ -16,9 +16,8 @@ export function setupCommentsCommands(program: Command): void {
   });
 
   comments.command("create <issueId>")
-    .description(
-      "Create new comment on issue (supports both UUID and identifier like ZCO-123)",
-    )
+    .description("Create new comment on issue.")
+    .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
     .option("--body <body>", "comment body (required)")
     .action(
       handleAsyncCommand(
