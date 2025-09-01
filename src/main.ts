@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
+import { setupCommentsCommands } from "./commands/comments.js";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
@@ -19,6 +20,7 @@ program.action(() => {
 });
 
 // Setup all subcommand groups
+setupCommentsCommands(program);
 setupIssuesCommands(program);
 setupLabelsCommands(program);
 setupProjectsCommands(program);

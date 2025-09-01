@@ -110,3 +110,19 @@ export interface LinearLabel {
     name: string;
   };
 }
+
+export interface CreateCommentArgs {
+  issueId: string;
+  body: string;
+}
+
+export interface LinearComment {
+  id: string;
+  body: string;
+  user: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}

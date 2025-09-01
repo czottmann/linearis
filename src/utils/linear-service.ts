@@ -1,7 +1,9 @@
 import { LinearClient } from "@linear/sdk";
 import { CommandOptions, getApiToken } from "./auth.js";
 import {
+  CreateCommentArgs,
   CreateIssueArgs,
+  LinearComment,
   LinearIssue,
   LinearLabel,
   LinearProject,
@@ -707,6 +709,42 @@ export class LinearService {
     }
 
     return { labels };
+  }
+
+  /**
+   * Create comment on issue
+   */
+  async createComment(args: CreateCommentArgs): Promise<LinearComment> {
+    const payload = await this.client.createComment({
+      issueId: args.issueId,
+      body: args.body,
+    });
+
+    if (!payload.success) {
+      throw new Error("Failed to create comment");
+    }
+
+    // Fetch the created comment to return full data
+    const comment = await payload.comment;
+    if (!comment) {
+      throw new Error("Failed to retrieve created comment");
+    }
+
+    const user = await comment.user;
+    if (!user) {
+      throw new Error("Failed to retrieve comment user information");
+    }
+
+    return {
+      id: comment.id,
+      body: comment.body,
+      user: {
+        id: user.id,
+        name: user.name,
+      },
+      createdAt: comment.createdAt.toISOString(),
+      updatedAt: comment.updatedAt.toISOString(),
+    };
   }
 }
 
