@@ -1,3 +1,5 @@
+<!-- Generated: 2025-01-09T12:34:56+00:00 -->
+
 # Performance Optimizations
 
 This document details the performance optimizations implemented in the Linear
@@ -22,57 +24,79 @@ The initial implementation suffered from a classic N+1 query problem:
 
 ## Solutions Implemented
 
-### 1. Promise.all() Parallel Fetching
+### 1. GraphQL Single-Query Strategy
 
-**Before** (Sequential):
+**Before** (Multiple API calls):
 
 ```typescript
-// Sequential API calls - SLOW
-const state = await this.client.workflowState(issue.state.id);
-const team = await this.client.team(issue.team.id);
-const assignee = await this.client.user(issue.assignee.id);
-// ... more sequential calls
+// Multiple sequential API calls - SLOW
+const issues = await this.client.issues({ first: 10 });
+for (const issue of issues.nodes) {
+  const state = await issue.state;
+  const team = await issue.team;
+  const assignee = await issue.assignee;
+  const project = await issue.project;
+  const labels = await issue.labels();
+}
 ```
 
-**After** (Parallel):
+**After** (Single GraphQL query):
 
 ```typescript
-// Parallel API calls - FAST
-const [state, team, assignee, project, labels] = await Promise.all([
-  this.client.workflowState(issue.state.id),
-  this.client.team(issue.team.id),
-  issue.assignee ? this.client.user(issue.assignee.id) : null,
-  issue.project ? this.client.project(issue.project.id) : null,
-  this.client.issueLabels(issue.id),
-]);
+// Single comprehensive GraphQL query - FAST
+const result = await this.graphQLService.rawRequest(GET_ISSUES_QUERY, {
+  first: limit,
+  orderBy: "updatedAt",
+});
+// All relationships included in single response
 ```
 
-### 2. Batch Processing for Lists
+### 2. GraphQL Batch Resolution
 
-For operations that process multiple items (like `issues list`), all related
-data is fetched in parallel:
+**Before** (Sequential ID resolution):
 
 ```typescript
-const issuesWithData = await Promise.all(
-  issues.map(async (issue) => {
-    const [state, team, assignee, project, labels] = await Promise.all([
-      // All related data fetched concurrently per issue
-    ]);
-    // ... processing
-  }),
+// Resolve team name → ID
+const team = await this.resolveTeamByName(teamName);
+// Resolve project name → ID  
+const project = await this.resolveProjectByName(projectName);
+// Resolve label names → IDs
+const labels = await Promise.all(labelNames.map(name => this.resolveLabelByName(name)));
+// Then create issue
+const issue = await this.createIssue({...});
+```
+
+**After** (Batch GraphQL resolution):
+
+```typescript
+// Single query resolves ALL IDs at once
+const resolveResult = await this.graphQLService.rawRequest(
+  BATCH_RESOLVE_FOR_CREATE_QUERY,
+  { teamName, projectName, labelNames },
 );
+// Then create with resolved IDs
 ```
 
-This means for 10 issues:
+This reduces issue creation from **7+ API calls to 2 API calls**.
 
-- **Before**: 51 sequential API calls (10+ seconds)
-- **After**: 6 batches of parallel calls (~0.9 seconds)
+### 3. Optimized Query Fragments
 
-### 3. Smart Query Optimization
+**Comprehensive Data Fetching** (src/queries/common.ts):
 
-- **Selective field fetching**: Only request needed GraphQL fields
-- **Null checking**: Skip API calls for null relationships
-- **Efficient data structures**: Use Linear SDK's optimized queries
+```graphql
+fragment CompleteIssue on Issue {
+  id identifier title description priority estimate
+  state { id name }
+  assignee { id name }
+  team { id key name }
+  project { id name }
+  labels { nodes { id name } }
+  createdAt updatedAt
+}
+```
+
+All issue operations use shared fragments to ensure consistent, complete data
+fetching without redundant queries.
 
 ## Performance Results
 
@@ -117,19 +141,27 @@ pnpm start issues list -l 1 < /dev/null  0.62s user 0.08s system 77% cpu 0.904 t
 
 ### Code Locations
 
-The optimizations are implemented in:
+The GraphQL optimizations are implemented in:
 
-- `/src/utils/linear-client.ts` - Lines ~211, 317, 434 (Promise.all
-  implementations)
-- `/src/commands/issues.ts` - Batch processing logic
-- `/src/commands/projects.ts` - Project data fetching optimization
+- **src/utils/graphql-service.ts** - GraphQL client wrapper with batch
+  operations
+- **src/utils/graphql-issues-service.ts** - Single-query issue operations (lines
+  32-536)
+- **src/queries/issues.ts** - Optimized GraphQL queries and fragments
+- **src/queries/common.ts** - Reusable query fragments for consistent data
+  fetching
+- **src/commands/issues.ts** - Enhanced commands using GraphQL service
 
 ### Key Performance Patterns
 
-1. **Concurrent Processing**: Use Promise.all() for independent API calls
-2. **Null Safety**: Check for relationships before fetching
-3. **Selective Querying**: Only fetch required fields
-4. **Batch Operations**: Process multiple items together when possible
+1. **Single GraphQL Queries**: Replace N+1 patterns with comprehensive single
+   queries
+2. **Batch ID Resolution**: Resolve multiple identifiers in single operations
+3. **Fragment Reuse**: Use consistent GraphQL fragments across operations
+4. **Smart Caching**: Leverage GraphQL response structure for efficient data
+   handling
+5. **Lightweight Operations**: Use minimal queries for simple operations like
+   comment creation
 
 ## Monitoring Performance
 

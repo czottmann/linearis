@@ -1,4 +1,4 @@
-<!-- Generated: 2025-08-30T19:51:49+02:00 -->
+<!-- Generated: 2025-01-09T12:34:56+00:00 -->
 
 # Project Overview
 
@@ -9,13 +9,15 @@ TypeScript and Node.js, the tool provides complete Linear API coverage with
 smart ID resolution and optimized performance.
 
 The CLI eliminates common performance bottlenecks found in API integrations,
-achieving 90%+ speed improvements through parallel query processing and
-efficient GraphQL operations. All commands return JSON-formatted responses,
-making it ideal for automation, scripting, and integration with other tools.
+achieving 90%+ speed improvements over parallel direct Linear SDK calls through
+optimized GraphQL batch operations and single-query strategies. All commands
+return JSON-formatted responses, making it ideal for automation, scripting, and
+integration with other tools.
 
 The tool supports comprehensive issue management (create, read, update, list,
-search), project operations, and comment handling with intelligent conversion
-between user-friendly identifiers (like ZCO-123) and internal UUIDs.
+search), project operations, comment handling, and enhanced label management
+with intelligent conversion between user-friendly identifiers (like ZCO-123) and
+internal UUIDs.
 
 ## Key Files
 
@@ -40,8 +42,8 @@ between user-friendly identifiers (like ZCO-123) and internal UUIDs.
   engines field)
 - **Commander.js v14.0.0** - CLI framework used in src/main.ts for command
   structure
-- **Linear SDK v58.1.0** - Official GraphQL API integration in
-  src/utils/linear-service.ts
+- **Linear SDK v58.1.0** - GraphQL API integration with optimized service layer
+  in src/utils/graphql-service.ts and src/utils/linear-service.ts
 - **tsx v4.20.5** - TypeScript execution engine for development (package.json
   scripts.start)
 
@@ -72,6 +74,8 @@ between user-friendly identifiers (like ZCO-123) and internal UUIDs.
 
 - **Direct execution** - `pnpm start <command>` for development (package.json
   scripts)
+- **Production build** - `npm run build` creates executable dist/main.js with
+  optimized performance
 - **TypeScript compilation** - `npx tsx src/main.ts <command>` for manual
   execution
 - **ES modules** - Modern module system enabled via package.json type: "module"

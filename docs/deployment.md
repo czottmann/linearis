@@ -3,7 +3,7 @@
 # Deployment
 
 The zco-linear-cli deploys as a compiled Node.js application with automatic
-builds during installation and 4.2x faster execution than development mode.
+builds during installation.
 Distribution supports npm packages, git-based installation, and standalone
 executables with automated TypeScript compilation ensuring consistency across
 platforms.

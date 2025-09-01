@@ -2,7 +2,7 @@
 
 # Linear CLI
 
-High-performance CLI for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Features 4.2x faster execution with compiled TypeScript, automated builds, and git-based distribution. Designed for LLM agents and users who prefer structured data.
+High-performance CLI for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and users who prefer structured data.
 
 ## Key Entry Points
 

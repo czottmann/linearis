@@ -1,15 +1,17 @@
-<!-- Generated: 2025-08-31T18:51:03+02:00 -->
+<!-- Generated: 2025-01-09T12:34:56+00:00 -->
 
 # Development
 
 The zco-linear-cli follows TypeScript-first development practices with strict
-typing, modular architecture, and performance-oriented design patterns.
-Development emphasizes code clarity, maintainability, and efficient API usage
-patterns for optimal Linear integration.
+typing, modular architecture, and GraphQL-optimized design patterns. Development
+emphasizes code clarity, maintainability, and efficient GraphQL operations for
+optimal Linear integration performance.
 
 The codebase uses modern ES modules, async/await patterns throughout, and
 leverages TypeScript's type system for compile-time safety. All development
 follows the principle of smart defaults with explicit user control when needed.
+Recent optimization work focuses on replacing SDK-heavy operations with direct
+GraphQL queries.
 
 ## Code Style
 
@@ -111,7 +113,8 @@ export async function createLinearService(
 ```typescript
 // Generic UUID validation using proper regex
 export function isUuid(value: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
 ```
@@ -129,21 +132,43 @@ if (isUuid(issueId)) {
 }
 ```
 
-### Performance Optimization Pattern
+### GraphQL Optimization Pattern
 
-**Parallel Processing** - Used throughout service layer:
+**Single Query Strategy** - Used throughout GraphQL service layer:
 
 ```typescript
-// From src/utils/linear-service.ts lines 362-370
-const projectsWithData = await Promise.all(
-  projects.nodes.map(async (project) => {
-    const [teams, lead] = await Promise.all([
-      project.teams(),
-      project.lead,
-    ]);
-    return { project, teams, lead };
-  }),
+// From src/utils/graphql-issues-service.ts lines 32-46
+async getIssues(limit: number = 25): Promise<LinearIssue[]> {
+  const result = await this.graphQLService.rawRequest(GET_ISSUES_QUERY, {
+    first: limit,
+    orderBy: "updatedAt" as any,
+  });
+  // Complete data in single response - no N+1 queries
+}
+```
+
+**Batch Resolution Pattern** - Resolve multiple IDs in single operation:
+
+```typescript
+// From src/utils/graphql-issues-service.ts lines 294-301
+const resolveResult = await this.graphQLService.rawRequest(
+  BATCH_RESOLVE_FOR_CREATE_QUERY,
+  { teamName, projectName, labelNames },
 );
+// All IDs resolved in single query
+```
+
+**Enhanced Label Management** - Supporting both adding and overwriting modes:
+
+```typescript
+// From src/utils/graphql-issues-service.ts lines 188-196
+if (labelMode === "adding") {
+  // Merge with current labels
+  finalLabelIds = [...new Set([...currentIssueLabels, ...resolvedLabels])];
+} else {
+  // Overwrite mode - replace all existing labels
+  finalLabelIds = resolvedLabels;
+}
 ```
 
 ## Workflows
@@ -151,9 +176,20 @@ const projectsWithData = await Promise.all(
 ### Adding New Commands
 
 1. **Define Interfaces** - Add to src/utils/linear-types.d.ts
-2. **Implement Service Methods** - Add to src/utils/linear-service.ts
-3. **Create Command Handler** - Add to appropriate src/commands/ file
-4. **Register Command** - Import and setup in src/main.ts
+2. **Create GraphQL Queries** - Add optimized queries to src/queries/
+3. **Implement GraphQL Service Methods** - Add to
+   src/utils/graphql-issues-service.ts or create new GraphQL service
+4. **Create Command Handler** - Add to appropriate src/commands/ file
+5. **Register Command** - Import and setup in src/main.ts
+
+### GraphQL Development Workflow
+
+1. **Design Query Strategy** - Single query vs batch resolution approach
+2. **Create Query Fragments** - Reuse existing fragments from
+   src/queries/common.ts
+3. **Implement Service Method** - Use GraphQLService for raw execution
+4. **Add Error Handling** - Transform GraphQL errors to user-friendly messages
+5. **Test Performance** - Compare against SDK-based approach for improvements
 
 **Example Command Addition Pattern** - src/commands/issues.ts (lines 138-152):
 
@@ -193,11 +229,12 @@ npx tsx src/main.ts --api-token <token> issues read ZCO-123
 # Clean and compile for production
 npm run clean && npm run build
 
-# Test compiled output (4.2x faster than tsx)
-node dist/main.js issues list -l 5
+# Test compiled output (creates executable dist/main.js)
+chmod +x dist/main.js
+./dist/main.js issues list -l 5
 
-# Time comparison (0.15s vs 0.64s)
-time node dist/main.js --help
+# Time comparison (compiled is significantly faster)
+time ./dist/main.js --help
 time npx tsx src/main.ts --help
 ```
 
@@ -226,7 +263,9 @@ export function outputError(error: Error): void {
 
 **Service Layer** - `src/utils/` directory:
 
-- linear-service.ts - Core business logic and API integration
+- graphql-service.ts - GraphQL client wrapper with batch operations
+- graphql-issues-service.ts - Optimized GraphQL issue operations
+- linear-service.ts - Legacy SDK-based business logic and fallback operations
 - auth.ts - Authentication handling
 - output.ts - Response formatting
 - linear-types.d.ts - Type definitions
@@ -234,9 +273,16 @@ export function outputError(error: Error): void {
 
 **Command Layer** - `src/commands/` directory:
 
-- issues.ts - Issue-related commands
+- issues.ts - Issue-related commands with enhanced label and parent management
 - projects.ts - Project-related commands
+- comments.ts - Comment operations with lightweight ID resolution
 - Pattern: Each domain gets its own command file
+
+**Query Layer** - `src/queries/` directory:
+
+- common.ts - Reusable GraphQL fragments
+- issues.ts - Optimized issue-specific GraphQL queries and mutations
+- index.ts - Query exports and organization
 
 ### Naming Conventions
 
@@ -253,10 +299,10 @@ export function outputError(error: Error): void {
 ### Development Best Practices
 
 **Type Safety** - Every function parameter and return type explicitly typed
-**Error Boundaries** - All async operations wrapped with error handling
-**Performance First** - All API calls optimized for parallel execution
-**User Experience** - Smart defaults with explicit override options
-**Build Automation** - npm prepare script ensures consistent builds
+**Error Boundaries** - All async operations wrapped with error handling\
+**GraphQL First** - New operations use GraphQL service for optimal performance
+**User Experience** - Smart defaults with explicit override options **Build
+Automation** - npm prepare script ensures consistent builds
 
 ### Build System Integration
 
@@ -270,7 +316,7 @@ npm install  # Triggers: npm run clean && npm run build
 **TypeScript Configuration** - tsconfig.json optimizations:
 
 - Target: ES2023 for modern Node.js features
-- Output: dist/ directory with declaration files  
+- Output: dist/ directory with declaration files
 - Remove comments and source maps for production
 - Strict mode enabled for type safety
 
@@ -278,6 +324,11 @@ npm install  # Triggers: npm run clean && npm run build
 
 **ES Module Imports** - Always use .js extensions in imports, even for .ts files
 **Authentication Testing** - Use token file method for local development
-**API Rate Limits** - Linear API has reasonable limits, but batch operations help
-**Development vs Production** - Use tsx for development, compiled JS for production (4.2x faster)
-**Missing dist/** - Run `npm install` or `npm run build` to create compiled output
+**GraphQL vs SDK** - Prefer GraphQL service for new operations, use SDK for
+fallbacks\
+**API Rate Limits** - Linear API has reasonable limits, but GraphQL batch
+operations help **Development vs Production** - Use tsx for development,
+compiled JS for production (significantly faster) **Missing dist/** - Run
+`npm install` or `npm run build` to create executable compiled output\
+**Build creates executable** - npm run build automatically makes dist/main.js
+executable
