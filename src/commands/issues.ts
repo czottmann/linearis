@@ -174,7 +174,16 @@ export function setupIssuesCommands(program: Command): void {
     .option("-p, --priority <priority>", "new priority (1-4)")
     .option("--assignee <assigneeId>", "new assignee ID")
     .option("--project <project>", "new project (name or ID)")
-    .option("--labels <labels>", "new labels (comma-separated names or IDs)")
+    .option(
+      "--labels <labels>",
+      "labels to work with (comma-separated names or IDs)",
+    )
+    .option("--add-labels", "add labels to existing ones (default)")
+    .option(
+      "--overwrite-labels",
+      "replace all existing labels with provided ones",
+    )
+    .option("--clear-labels", "remove all labels from issue")
     .option("--parent-ticket <parentId>", "set parent issue ID or identifier")
     .option("--clear-parent-ticket", "clear existing parent relationship")
     .action(
@@ -191,6 +200,34 @@ export function setupIssuesCommands(program: Command): void {
             );
           }
 
+          // Check for mutually exclusive label operation flags
+          const labelOpCount = [
+            options.addLabels,
+            options.overwriteLabels,
+            options.clearLabels,
+          ].filter(Boolean).length;
+
+          if (labelOpCount > 1) {
+            throw new Error(
+              "Cannot use multiple label operation flags together (--add-labels, --overwrite-labels, --clear-labels)",
+            );
+          }
+
+          // Validate label requirements
+          if (
+            (options.addLabels || options.overwriteLabels) && !options.labels
+          ) {
+            throw new Error(
+              "--add-labels and --overwrite-labels require --labels to be specified",
+            );
+          }
+
+          if (options.clearLabels && options.labels) {
+            throw new Error(
+              "--clear-labels cannot be used with --labels",
+            );
+          }
+
           // Resolve issue ID if it's an identifier
           let resolvedIssueId = issueId;
           if (!isUuid(issueId)) {
@@ -204,13 +241,36 @@ export function setupIssuesCommands(program: Command): void {
             projectId = await service.resolveProjectId(projectId);
           }
 
-          // Resolve labels if provided
+          // Handle label operations
           let labelIds: string[] | undefined;
-          if (options.labels) {
+          if (options.clearLabels) {
+            // Clear all labels - pass empty array
+            labelIds = [];
+          } else if (options.labels) {
+            // Parse and resolve provided labels
             const labelNames = options.labels.split(",").map((l: string) =>
               l.trim()
             );
-            labelIds = await service.resolveLabelIds(labelNames);
+            const newLabelIds = await service.resolveLabelIds(labelNames);
+
+            if (options.overwriteLabels) {
+              // Overwrite mode - replace all existing labels
+              labelIds = newLabelIds;
+            } else if (
+              options.addLabels ||
+              (!options.addLabels && !options.overwriteLabels &&
+                !options.clearLabels)
+            ) {
+              // Add mode (or default behavior when no label flags are specified)
+              const currentIssue = await service.getIssueById(resolvedIssueId);
+              const currentLabelIds = currentIssue.labels.map((label) =>
+                label.id
+              );
+
+              // Merge and deduplicate
+              const mergedLabels = [...currentLabelIds, ...newLabelIds];
+              labelIds = [...new Set(mergedLabels)];
+            }
           }
 
           // Handle parent ticket resolution
