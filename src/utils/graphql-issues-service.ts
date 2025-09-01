@@ -1,12 +1,18 @@
 import { GraphQLService } from "./graphql-service.js";
 import {
+  BATCH_RESOLVE_FOR_CREATE_QUERY,
   BATCH_RESOLVE_FOR_UPDATE_QUERY,
+  CREATE_ISSUE_MUTATION,
   GET_ISSUE_BY_ID_QUERY,
   GET_ISSUE_BY_IDENTIFIER_QUERY,
   GET_ISSUES_QUERY,
   UPDATE_ISSUE_MUTATION,
 } from "../queries/issues.js";
-import type { LinearIssue, UpdateIssueArgs } from "./linear-types.d.ts";
+import type {
+  CreateIssueArgs,
+  LinearIssue,
+  UpdateIssueArgs,
+} from "./linear-types.d.ts";
 import { isUuid } from "./uuid.js";
 import { timeOperation } from "./performance.js";
 
@@ -238,6 +244,153 @@ export class GraphQLIssuesService {
       }
 
       return this.transformIssueData(updateResult.issueUpdate.issue);
+    });
+  }
+
+  /**
+   * Create issue with all relationships in optimized GraphQL queries
+   * Reduces from 7+ API calls to 2 API calls (resolve + create)
+   *
+   * @param args Create arguments (supports team names, project names, label names, parent identifiers)
+   */
+  async createIssue(args: CreateIssueArgs): Promise<LinearIssue> {
+    return timeOperation("issues-create-graphql", "GraphQL", async () => {
+      // Step 1: Batch resolve all IDs
+      const resolveVariables: any = {};
+
+      // Parse team if not a UUID
+      if (args.teamId && !isUuid(args.teamId)) {
+        // Check if it looks like a team key (short, usually 2-5 chars)
+        if (args.teamId.length <= 5 && /^[A-Z]+$/.test(args.teamId)) {
+          resolveVariables.teamKey = args.teamId;
+        } else {
+          resolveVariables.teamName = args.teamId;
+        }
+      }
+
+      // Add project name for resolution if provided and not a UUID
+      if (args.projectId && !isUuid(args.projectId)) {
+        resolveVariables.projectName = args.projectId;
+      }
+
+      // Add label names for resolution if provided
+      if (args.labelIds && Array.isArray(args.labelIds)) {
+        // Filter out UUIDs and collect label names for resolution
+        const labelNames = args.labelIds.filter((id) => !isUuid(id));
+        if (labelNames.length > 0) {
+          resolveVariables.labelNames = labelNames;
+        }
+      }
+
+      // Parse parent issue identifier if provided
+      if (args.parentId && !isUuid(args.parentId)) {
+        const parts = args.parentId.split("-");
+        if (parts.length === 2) {
+          const teamKey = parts[0];
+          const issueNumber = parseInt(parts[1]);
+          if (!isNaN(issueNumber)) {
+            resolveVariables.parentTeamKey = teamKey;
+            resolveVariables.parentIssueNumber = issueNumber;
+          }
+        }
+      }
+
+      // Execute batch resolve query if we have anything to resolve
+      let resolveResult: any = {};
+      if (Object.keys(resolveVariables).length > 0) {
+        resolveResult = await this.graphQLService.rawRequest(
+          BATCH_RESOLVE_FOR_CREATE_QUERY,
+          resolveVariables,
+        );
+      }
+
+      // Resolve team ID
+      let finalTeamId = args.teamId;
+      if (args.teamId && !isUuid(args.teamId)) {
+        if (!resolveResult.teams?.nodes?.length) {
+          throw new Error(`Team "${args.teamId}" not found`);
+        }
+        finalTeamId = resolveResult.teams.nodes[0].id;
+      } else if (!finalTeamId) {
+        // If no team specified, we'll let Linear's default behavior handle it
+        // or the API will return an error
+      }
+
+      // Resolve project ID
+      let finalProjectId = args.projectId;
+      if (args.projectId && !isUuid(args.projectId)) {
+        if (!resolveResult.projects?.nodes?.length) {
+          throw new Error(`Project "${args.projectId}" not found`);
+        }
+        finalProjectId = resolveResult.projects.nodes[0].id;
+      }
+
+      // Resolve label IDs
+      let finalLabelIds = args.labelIds;
+      if (args.labelIds && Array.isArray(args.labelIds)) {
+        const resolvedLabels: string[] = [];
+
+        for (const labelIdOrName of args.labelIds) {
+          if (isUuid(labelIdOrName)) {
+            resolvedLabels.push(labelIdOrName);
+          } else {
+            // Find resolved label
+            const label = resolveResult.labels?.nodes?.find((l: any) =>
+              l.name === labelIdOrName
+            );
+            if (!label) {
+              throw new Error(`Label "${labelIdOrName}" not found`);
+            }
+            resolvedLabels.push(label.id);
+          }
+        }
+
+        finalLabelIds = resolvedLabels;
+      }
+
+      // Resolve parent ID
+      let finalParentId = args.parentId;
+      if (args.parentId && !isUuid(args.parentId)) {
+        if (!resolveResult.parentIssues?.nodes?.length) {
+          throw new Error(`Parent issue "${args.parentId}" not found`);
+        }
+        finalParentId = resolveResult.parentIssues.nodes[0].id;
+      }
+
+      // Step 2: Execute create mutation with resolved IDs
+      const createInput: any = {
+        title: args.title,
+      };
+
+      if (finalTeamId) createInput.teamId = finalTeamId;
+      if (args.description) createInput.description = args.description;
+      if (args.assigneeId) createInput.assigneeId = args.assigneeId;
+      if (args.priority !== undefined) createInput.priority = args.priority;
+      if (finalProjectId) createInput.projectId = finalProjectId;
+      if (args.stateId) createInput.stateId = args.stateId;
+      if (finalLabelIds && finalLabelIds.length > 0) {
+        createInput.labelIds = finalLabelIds;
+      }
+      if (args.estimate !== undefined) createInput.estimate = args.estimate;
+      if (finalParentId) createInput.parentId = finalParentId;
+      if (args.milestoneId) createInput.projectMilestoneId = args.milestoneId;
+
+      const createResult = await this.graphQLService.rawRequest(
+        CREATE_ISSUE_MUTATION,
+        {
+          input: createInput,
+        },
+      );
+
+      if (!createResult.issueCreate.success) {
+        throw new Error("Failed to create issue");
+      }
+
+      if (!createResult.issueCreate.issue) {
+        throw new Error("Failed to retrieve created issue");
+      }
+
+      return this.transformIssueData(createResult.issueCreate.issue);
     });
   }
 

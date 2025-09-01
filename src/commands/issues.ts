@@ -3,7 +3,6 @@ import { createLinearService } from "../utils/linear-service.js";
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { GraphQLIssuesService } from "../utils/graphql-issues-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
-import { isUuid } from "../utils/uuid.js";
 
 /**
  * Setup issues commands on the program
@@ -22,7 +21,9 @@ export function setupIssuesCommands(program: Command): void {
     .description("List issues")
     .option("-l, --limit <number>", "limit results", "25")
     .action(handleAsyncCommand(async (options: any, command: Command) => {
-      const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
+      const graphQLService = await createGraphQLService(
+        command.parent!.parent!.opts(),
+      );
       const issuesService = new GraphQLIssuesService(graphQLService);
       const result = await issuesService.getIssues(parseInt(options.limit));
       outputSuccess(result);
@@ -88,64 +89,31 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (title: string, options: any, command: Command) => {
-          const service = await createLinearService(
+          const graphQLService = await createGraphQLService(
             command.parent!.parent!.opts(),
           );
+          const issuesService = new GraphQLIssuesService(graphQLService);
 
-          // Resolve team
-          let teamId = options.team;
-          if (teamId) {
-            teamId = await service.resolveTeamId(teamId);
-          }
-
-          // Resolve project if provided
-          let projectId = options.project;
-          if (projectId) {
-            projectId = await service.resolveProjectId(projectId);
-          }
-
-          // Resolve labels
+          // Prepare labels array if provided
           let labelIds: string[] | undefined;
           if (options.labels) {
-            const labelNames = options.labels.split(",").map((l: string) =>
-              l.trim()
-            );
-            labelIds = await service.resolveLabelIds(labelNames);
-          }
-
-          // Resolve milestone if provided (requires project to be resolved first)
-          let milestoneId = options.milestone;
-          if (milestoneId && projectId) {
-            milestoneId = await service.resolveMilestoneId(
-              milestoneId,
-              projectId,
-            );
-          }
-
-          // Resolve parent ticket if provided
-          let parentId = options.parentTicket;
-          if (parentId) {
-            // If it's not a UUID, try to resolve it as an identifier
-            if (!isUuid(parentId)) {
-              const parentIssue = await service.getIssueById(parentId);
-              parentId = parentIssue.id;
-            }
+            labelIds = options.labels.split(",").map((l: string) => l.trim());
           }
 
           const createArgs = {
             title,
-            teamId,
+            teamId: options.team, // GraphQL service handles team resolution
             description: options.description,
             assigneeId: options.assignee,
             priority: options.priority ? parseInt(options.priority) : undefined,
-            projectId,
+            projectId: options.project, // GraphQL service handles project resolution
             stateId: options.status,
-            labelIds,
-            parentId,
-            milestoneId,
+            labelIds, // GraphQL service handles label resolution
+            parentId: options.parentTicket, // GraphQL service handles parent resolution
+            milestoneId: options.milestone,
           };
 
-          const result = await service.createIssue(createArgs);
+          const result = await issuesService.createIssue(createArgs);
           outputSuccess(result);
         },
       ),
@@ -158,7 +126,9 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
-          const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
+          const graphQLService = await createGraphQLService(
+            command.parent!.parent!.opts(),
+          );
           const issuesService = new GraphQLIssuesService(graphQLService);
           const result = await issuesService.getIssueById(issueId);
           outputSuccess(result);
@@ -228,7 +198,9 @@ export function setupIssuesCommands(program: Command): void {
             );
           }
 
-          const graphQLService = await createGraphQLService(command.parent!.parent!.opts());
+          const graphQLService = await createGraphQLService(
+            command.parent!.parent!.opts(),
+          );
           const issuesService = new GraphQLIssuesService(graphQLService);
 
           // Prepare update arguments for GraphQL service

@@ -238,3 +238,77 @@ export const UPDATE_ISSUE_MUTATION = `
     }
   }
 `;
+
+/**
+ * Comprehensive batch resolve for create operations
+ */
+export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
+  query BatchResolveForCreate(
+    $teamKey: String
+    $teamName: String
+    $projectName: String
+    $labelNames: [String!]
+    $parentTeamKey: String
+    $parentIssueNumber: Float
+  ) {
+    # Resolve team if provided
+    teams(
+      filter: { 
+        or: [
+          { key: { eq: $teamKey } }
+          { name: { eq: $teamName } }
+        ]
+      }
+      first: 1
+    ) {
+      nodes {
+        id
+        key
+        name
+      }
+    }
+    
+    # Resolve project if provided
+    projects(filter: { name: { eq: $projectName } }, first: 1) {
+      nodes {
+        id
+        name
+      }
+    }
+    
+    # Resolve labels if provided
+    labels: issueLabels(filter: { name: { in: $labelNames } }) {
+      nodes {
+        id
+        name
+        isGroup
+        parent {
+          id
+          name
+        }
+        children {
+          nodes {
+            id
+            name
+          }
+        }
+      }
+    }
+    
+    # Resolve parent issue if provided
+    parentIssues: issues(
+      filter: {
+        and: [
+          { team: { key: { eq: $parentTeamKey } } }
+          { number: { eq: $parentIssueNumber } }
+        ]
+      }
+      first: 1
+    ) {
+      nodes {
+        id
+        identifier
+      }
+    }
+  }
+`;
