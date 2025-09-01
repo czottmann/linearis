@@ -1,7 +1,10 @@
 import { Command } from "commander";
 import { createLinearService } from "../utils/linear-service.js";
+import { createGraphQLService } from "../utils/graphql-service.js";
+import { GraphQLIssuesService } from "../utils/graphql-issues-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 import { isUuid } from "../utils/uuid.js";
+import { performanceTracker, timeOperation } from "../utils/performance.js";
 
 /**
  * Setup issues commands on the program
@@ -152,14 +155,42 @@ export function setupIssuesCommands(program: Command): void {
     .description(
       "Get issue details (supports both UUID and identifier like ZCO-123)",
     )
+    .option(
+      "--use-graphql",
+      "use optimized GraphQL implementation for better performance",
+    )
+    .option(
+      "--show-perf",
+      "show performance comparison between SDK and GraphQL",
+    )
     .action(
       handleAsyncCommand(
         async (issueId: string, options: any, command: Command) => {
-          const service = await createLinearService(
-            command.parent!.parent!.opts(),
-          );
-          const result = await service.getIssueById(issueId);
-          outputSuccess(result);
+          if (options.useGraphql) {
+            // Use optimized GraphQL implementation
+            const graphQLService = await createGraphQLService(
+              command.parent!.parent!.opts(),
+            );
+            const issuesService = new GraphQLIssuesService(graphQLService);
+            const result = await issuesService.getIssueById(issueId);
+            outputSuccess(result);
+          } else {
+            // Use existing SDK implementation (with performance tracking)
+            const service = await createLinearService(
+              command.parent!.parent!.opts(),
+            );
+            const result = await timeOperation(
+              "issues-read-sdk",
+              "SDK",
+              () => service.getIssueById(issueId),
+            );
+            outputSuccess(result);
+          }
+
+          // Show performance comparison if requested
+          if (options.showPerf) {
+            console.error(performanceTracker.generateReport());
+          }
         },
       ),
     );
