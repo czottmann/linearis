@@ -5,7 +5,7 @@ import { Command } from "commander";
  * @param program - Commander.js program instance
  * @returns Formatted usage string with all subcommand help blocks
  */
-export function generateUsageInfo(program: Command): string {
+export function outputUsageInfo(program: Command) {
   const subcommands: { name: string; command: Command }[] = [];
 
   // Collect all leaf subcommands (not parent commands)
@@ -22,9 +22,7 @@ export function generateUsageInfo(program: Command): string {
       }
     } else {
       // This is a parent command, recurse into its subcommands
-      commands.forEach((subcmd) => {
-        collectSubcommands(subcmd, currentName);
-      });
+      commands.forEach((subcmd) => collectSubcommands(subcmd, currentName));
     }
   }
 
@@ -34,11 +32,9 @@ export function generateUsageInfo(program: Command): string {
   // Sort subcommands alphabetically by full name
   subcommands.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Generate help text for each subcommand
-  const helpBlocks = subcommands.map(({ command }) => {
-    return command.helpInformation();
+  // Output full (incl. `.addHelpText()` blocks ) help text for each subcommand
+  subcommands.forEach(({ command }) => {
+    command.outputHelp();
+    console.log("\n---\n")
   });
-
-  // Join with separator
-  return helpBlocks.join("\n---\n\n");
 }
