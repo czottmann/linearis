@@ -172,6 +172,38 @@ export class LinearService {
   }
 
   /**
+   * Resolve state name to state ID for a specific team
+   */
+  async resolveStateId(stateName: string, teamId?: string): Promise<string> {
+    // Return UUID as-is
+    if (isUuid(stateName)) {
+      return stateName;
+    }
+
+    // Build filter for workflow states
+    const filter: any = {
+      name: { eqIgnoreCase: stateName },
+    };
+
+    // If teamId is provided, filter by team
+    if (teamId) {
+      filter.team = { id: { eq: teamId } };
+    }
+
+    const states = await this.client.workflowStates({
+      filter,
+      first: 1,
+    });
+
+    if (states.nodes.length === 0) {
+      const context = teamId ? ` for team ${teamId}` : "";
+      throw new Error(`State "${stateName}"${context} not found`);
+    }
+
+    return states.nodes[0].id;
+  }
+
+  /**
    * Get all labels (workspace and team-specific)
    */
   async getLabels(teamFilter?: string): Promise<{ labels: LinearLabel[] }> {

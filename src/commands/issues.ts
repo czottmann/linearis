@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { GraphQLIssuesService } from "../utils/graphql-issues-service.js";
+import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
@@ -22,14 +23,18 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (options: any, command: Command) => {
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
           );
-          const issuesService = new GraphQLIssuesService(graphQLService);
           const result = await issuesService.getIssues(parseInt(options.limit));
           outputSuccess(result);
-        }
-      )
+        },
+      ),
     );
 
   issues.command("search <query>")
@@ -42,10 +47,14 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (query: string, options: any, command: Command) => {
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
           );
-          const issuesService = new GraphQLIssuesService(graphQLService);
 
           const searchArgs = {
             query,
@@ -81,10 +90,14 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (title: string, options: any, command: Command) => {
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
           );
-          const issuesService = new GraphQLIssuesService(graphQLService);
 
           // Prepare labels array if provided
           let labelIds: string[] | undefined;
@@ -113,14 +126,21 @@ export function setupIssuesCommands(program: Command): void {
 
   issues.command("read <issueId>")
     .description("Get issue details.")
-    .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
+    .addHelpText(
+      "after",
+      `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`,
+    )
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
           );
-          const issuesService = new GraphQLIssuesService(graphQLService);
           const result = await issuesService.getIssueById(issueId);
           outputSuccess(result);
         },
@@ -129,10 +149,13 @@ export function setupIssuesCommands(program: Command): void {
 
   issues.command("update <issueId>")
     .description("Update an issue.")
-    .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
+    .addHelpText(
+      "after",
+      `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`,
+    )
     .option("-t, --title <title>", "new title")
     .option("-d, --description <desc>", "new description")
-    .option("-s, --state <stateId>", "new state ID")
+    .option("-s, --state <stateId>", "new state name or ID")
     .option("-p, --priority <priority>", "new priority (1-4)")
     .option("--assignee <assigneeId>", "new assignee ID")
     .option("--project <project>", "new project (name or ID)")
@@ -188,10 +211,14 @@ export function setupIssuesCommands(program: Command): void {
             );
           }
 
-          const graphQLService = await createGraphQLService(
-            command.parent!.parent!.opts(),
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
           );
-          const issuesService = new GraphQLIssuesService(graphQLService);
 
           // Prepare update arguments for GraphQL service
           let labelIds: string[] | undefined;

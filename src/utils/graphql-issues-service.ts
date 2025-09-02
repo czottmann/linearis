@@ -1,4 +1,5 @@
 import { GraphQLService } from "./graphql-service.js";
+import { LinearService } from "./linear-service.js";
 import {
   BATCH_RESOLVE_FOR_CREATE_QUERY,
   BATCH_RESOLVE_FOR_SEARCH_QUERY,
@@ -23,7 +24,10 @@ import { isUuid } from "./uuid.js";
  * GraphQL-optimized issues service for single API call operations
  */
 export class GraphQLIssuesService {
-  constructor(private graphQLService: GraphQLService) { }
+  constructor(
+    private graphQLService: GraphQLService,
+    private linearService: LinearService,
+  ) {}
 
   /**
    * Get issues list with all relationships in single query
@@ -205,6 +209,29 @@ export class GraphQLIssuesService {
       finalProjectId = resolveResult.projects.nodes[0].id;
     }
 
+    // Resolve state ID if provided and not a UUID
+    let resolvedStateId = args.stateId;
+    if (args.stateId && !isUuid(args.stateId)) {
+      // Get team ID from the issue for state context
+      let teamId: string | undefined;
+      if (resolvedIssueId && isUuid(resolvedIssueId)) {
+        // We have the resolved issue ID, get the team context
+        const issueResult = await this.graphQLService.rawRequest(
+          `query GetIssueTeam($issueId: String!) {
+            issue(id: $issueId) {
+              team { id }
+            }
+          }`,
+          { issueId: resolvedIssueId },
+        );
+        teamId = issueResult.issue?.team?.id;
+      }
+      resolvedStateId = await this.linearService.resolveStateId(
+        args.stateId,
+        teamId,
+      );
+    }
+
     // Step 2: Execute update mutation with resolved IDs
     const updateInput: any = {};
 
@@ -212,7 +239,7 @@ export class GraphQLIssuesService {
     if (args.description !== undefined) {
       updateInput.description = args.description;
     }
-    if (args.stateId !== undefined) updateInput.stateId = args.stateId;
+    if (resolvedStateId !== undefined) updateInput.stateId = resolvedStateId;
     if (args.priority !== undefined) updateInput.priority = args.priority;
     if (args.assigneeId !== undefined) {
       updateInput.assigneeId = args.assigneeId;
@@ -353,6 +380,15 @@ export class GraphQLIssuesService {
       finalParentId = resolveResult.parentIssues.nodes[0].id;
     }
 
+    // Resolve state ID if provided and not a UUID
+    let resolvedStateId = args.stateId;
+    if (args.stateId && !isUuid(args.stateId)) {
+      resolvedStateId = await this.linearService.resolveStateId(
+        args.stateId,
+        finalTeamId,
+      );
+    }
+
     // Step 2: Execute create mutation with resolved IDs
     const createInput: any = {
       title: args.title,
@@ -363,7 +399,7 @@ export class GraphQLIssuesService {
     if (args.assigneeId) createInput.assigneeId = args.assigneeId;
     if (args.priority !== undefined) createInput.priority = args.priority;
     if (finalProjectId) createInput.projectId = finalProjectId;
-    if (args.stateId) createInput.stateId = args.stateId;
+    if (resolvedStateId) createInput.stateId = resolvedStateId;
     if (finalLabelIds && finalLabelIds.length > 0) {
       createInput.labelIds = finalLabelIds;
     }
