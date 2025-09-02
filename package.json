@@ -2,11 +2,9 @@
   "name": "linearis",
   "version": "1.0.0",
   "description": "CLI tool for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.",
-  "main": "./dist/main.js",
+  "main": "dist/main.js",
   "type": "module",
-  "bin": {
-    "linearis": "./dist/main.js"
-  },
+  "bin": "dist/main.js",
   "files": [
     "dist/",
     "README.md",
