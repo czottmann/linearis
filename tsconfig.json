@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Node",
-    "lib": ["ES2023"],
+    "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -17,8 +17,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": false,
-    "allowImportingTsExtensions": false,
     "noEmitOnError": true,
     "pretty": true,
     "types": ["node"]
