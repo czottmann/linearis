@@ -126,6 +126,20 @@ linearis issues list
 1. Go to _Settings_ → _Security & Access_ → _Personal API keys_
 1. Create a new API key
 
+
+## Example rule for your LLM agent
+
+```markdown
+We track our tickets and projects in Linear (https://linear.app), a project management tool. We use the `linearis` CLI tool for communicating with Linear. Use your Bash tool to call the `linearis` executable. Run `linearis usage` to see usage information.
+
+The ticket numbers follow the format "ABC-<number>". Always reference tickets by their number.
+
+If you create a ticket, and it's not clear which project to assign it to, prompt the user. When creating subtasks, use the project of the parent ticket by default.
+
+When the the status of a task in the ticket description has changed (task → task done), update the description accordingly. When updating a ticket with a progress report that is more than just a checkbox change, add that report as a ticket comment.
+```
+
+
 ## Author
 
 Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev,
