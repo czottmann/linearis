@@ -17,7 +17,7 @@ import type {
   LinearIssue,
   SearchIssuesArgs,
   UpdateIssueArgs,
-} from "./linear-types.d.ts";
+} from "./linear-types.js";
 import { isUuid } from "./uuid.js";
 
 /**
