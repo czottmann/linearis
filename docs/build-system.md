@@ -2,10 +2,9 @@
 
 # Build System
 
-The zco-linear-cli uses a TypeScript compilation-based build system optimized
+Linearis uses a TypeScript compilation-based build system optimized
 for both development productivity and production performance. The project
-features automatic builds during installation, cross-platform clean scripts,
-and 4.2x faster startup times with compiled JavaScript over TypeScript execution.
+features automatic builds during installation, and cross-platform clean scripts.
 
 The build system leverages TypeScript's compiler for production builds while
 maintaining tsx for development convenience. All builds output to the dist/
@@ -50,7 +49,6 @@ pnpm start <command>
 
 ```bash
 node dist/main.js <command>
-# Direct execution of compiled JavaScript (4.2x faster than tsx)
 ```
 
 ### Package Management Workflows
@@ -140,7 +138,6 @@ npm run build
 
 - Compiled JavaScript: ~0.15s startup (production)
 - tsx TypeScript: ~0.64s startup (development only)
-- Performance improvement: 4.2x faster with compiled output
 
 **Import Resolution** - All imports in TypeScript files use .js extensions:
 

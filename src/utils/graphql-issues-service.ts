@@ -66,7 +66,7 @@ export class GraphQLIssuesService {
       }
       issueData = result.issue;
     } else {
-      // Parse identifier (ZCO-123 format)
+      // Parse identifier (ABC-123 format)
       const parts = issueId.split("-");
       if (parts.length !== 2) {
         throw new Error(

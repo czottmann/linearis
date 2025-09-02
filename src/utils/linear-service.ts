@@ -60,7 +60,7 @@ export class LinearService {
       return issueId;
     }
 
-    // Parse identifier (ZCO-123 format) and resolve to UUID
+    // Parse identifier (ABC-123 format) and resolve to UUID
     const parts = issueId.split("-");
     if (parts.length !== 2) {
       throw new Error(
@@ -144,7 +144,7 @@ export class LinearService {
       return teamKeyOrNameOrId;
     }
 
-    // Try to find by key first (like "ZCO"), then by name
+    // Try to find by key first (like "ABC"), then by name
     try {
       const team = await executeLinearQuery(
         () =>

@@ -61,7 +61,7 @@ The CLI supports three authentication methods (in order of preference):
 ### Development Notes
 
 - All TypeScript files are fully implemented with proper typing
-- LinearService provides smart ID resolution (ZCO-123 → UUID, label names → IDs,
+- LinearService provides smart ID resolution (ABC-123 → UUID, label names → IDs,
   etc.)
 - Issue creation supports both `--project` and `--project-id` flags as specified
 - Smart parameter conversion allows using human-friendly names instead of UUIDs
@@ -72,7 +72,7 @@ The CLI supports three authentication methods (in order of preference):
 The CLI automatically handles conversions between user-friendly and internal
 identifiers:
 
-- **Issue IDs**: `ZCO-123` ↔ internal UUID
+- **Issue IDs**: `ABC-123` ↔ internal UUID
 - **Project names**: `"My Project"` → project UUID
 - **Label names**: `"Bug", "Enhancement"` → label UUIDs
-- **Team keys/names**: `"ZCO"` or `"My Team"` → team UUID
+- **Team keys/names**: `"ABC"` or `"My Team"` → team UUID

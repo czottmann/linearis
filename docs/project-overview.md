@@ -2,7 +2,7 @@
 
 # Project Overview
 
-The zco-linear-cli is a high-performance Command Line Interface (CLI) tool for
+Linearis is a high-performance Command Line Interface (CLI) tool for
 Linear.app that outputs structured JSON data. It's specifically designed for LLM
 agents and users who prefer structured output over web interfaces. Built with
 TypeScript and Node.js, the tool provides complete Linear API coverage with
@@ -16,7 +16,7 @@ integration with other tools.
 
 The tool supports comprehensive issue management (create, read, update, list,
 search), project operations, comment handling, and enhanced label management
-with intelligent conversion between user-friendly identifiers (like ZCO-123) and
+with intelligent conversion between user-friendly identifiers (like ABC-123) and
 internal UUIDs.
 
 ## Key Files

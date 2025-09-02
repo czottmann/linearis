@@ -2,7 +2,7 @@
 
 # Development
 
-The zco-linear-cli follows TypeScript-first development practices with strict
+Linearis follows TypeScript-first development practices with strict
 typing, modular architecture, and GraphQL-optimized design patterns. Development
 emphasizes code clarity, maintainability, and efficient GraphQL operations for
 optimal Linear integration performance.
@@ -126,7 +126,7 @@ export function isUuid(value: string): boolean {
 if (isUuid(issueId)) {
   issue = await this.client.issue(issueId);
 } else {
-  // Parse team-number format like "ZCO-123"
+  // Parse team-number format like "ABC-123"
   const parts = issueId.split("-");
   // ... resolve to internal UUID
 }
@@ -196,7 +196,7 @@ if (labelMode === "adding") {
 ```typescript
 issues.command("read <issueId>")
   .description(
-    "Get issue details (supports both UUID and identifier like ZCO-123)",
+    "Get issue details (supports both UUID and identifier like ABC-123)",
   )
   .action(
     handleAsyncCommand(
@@ -220,7 +220,7 @@ issues.command("read <issueId>")
 pnpm start issues list -l 5
 
 # Direct execution for debugging
-npx tsx src/main.ts --api-token <token> issues read ZCO-123
+npx tsx src/main.ts --api-token <token> issues read ABC-123
 ```
 
 **Production Build Workflow**:

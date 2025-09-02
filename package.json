@@ -1,11 +1,11 @@
 {
-  "name": "zco-linear-cli",
+  "name": "linearis",
   "version": "1.0.0",
-  "description": "High-performance CLI for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and users who prefer structured data.",
+  "description": "CLI tool for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.",
   "main": "dist/main.js",
   "type": "module",
   "bin": {
-    "linear": "dist/main.js"
+    "linearis": "dist/main.js"
   },
   "scripts": {
     "build": "tsc && chmod +x dist/main.js",

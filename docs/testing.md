@@ -2,7 +2,7 @@
 
 # Testing
 
-The zco-linear-cli currently has minimal automated testing infrastructure, with
+Linearis currently has minimal automated testing infrastructure, with
 testing primarily done through manual integration testing and performance
 benchmarking. The project relies on TypeScript's compile-time type checking and
 real-world API testing against Linear's production environment.
@@ -56,13 +56,13 @@ pnpm test
 pnpm start issues list -l 5
 
 # Test issue reading with ID resolution
-pnpm start issues read ZCO-123
+pnpm start issues read ABC-123
 
 # Test issue creation
-pnpm start issues create --title "Test Issue" --team ZCO
+pnpm start issues create --title "Test Issue" --team ABC
 
 # Test issue search with filters
-pnpm start issues search "bug" --team ZCO --project "Mobile App"
+pnpm start issues search "bug" --team ABC --project "Mobile App"
 ```
 
 **Project Operations Testing**
@@ -97,10 +97,10 @@ echo "<token>" > ~/.linear_api_token && pnpm start issues list
 time pnpm start issues list -l 10
 
 # Monitor single issue performance
-time pnpm start issues read ZCO-123
+time pnpm start issues read ABC-123
 
 # Test search performance
-time pnpm start issues search "test" --team ZCO
+time pnpm start issues search "test" --team ABC
 ```
 
 ## Reference
@@ -148,6 +148,6 @@ time pnpm start issues search "test" --team ZCO
 
 ```bash
 # Create performance test script
-echo 'time linear issues list -l 25' > perf-test.sh
+echo 'time linearis issues list -l 25' > perf-test.sh
 chmod +x perf-test.sh && ./perf-test.sh
 ```

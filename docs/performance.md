@@ -115,16 +115,16 @@ All tests performed with real Linear API:
 
 ```bash
 # Single issue read
-time pnpm start issues read ZCO-123
+time pnpm start issues read ABC-123
 
 # List issues  
 time pnpm start issues list -l 10
 
 # Create issue
-time pnpm start issues create --title "Test" --team ZCO
+time pnpm start issues create --title "Test" --team ABC
 
 # Search issues
-time pnpm start issues search "test" --team ZCO
+time pnpm start issues search "test" --team ABC
 ```
 
 ### Real-World Performance
@@ -169,13 +169,13 @@ To monitor performance in production:
 
 ```bash
 # Add timing to any command
-time linear <command>
+time linearis <command>
 
 # Example: Monitor issue listing performance
-time linear issues list -l 25
+time linearis issues list -l 25
 
 # Example: Monitor search performance  
-time linear issues search "bug" --team ZCO
+time linearis issues search "bug" --team ABC
 ```
 
 ## Future Optimizations

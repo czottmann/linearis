@@ -2,7 +2,7 @@
 
 # Architecture
 
-The zco-linear-cli follows a modular, service-oriented architecture with clear
+Linearis follows a modular, service-oriented architecture with clear
 separation of concerns. The application uses a command-based structure with
 Commander.js, optimized GraphQL service layers for Linear API integration, and
 utility modules for cross-cutting concerns like authentication and output
@@ -98,7 +98,7 @@ Linear API uses UUIDs internally, but users prefer human-readable identifiers:
 
 **Issue Resolution** (src/utils/linear-service.ts lines 193-290)
 
-- Input: "ZCO-123" → Parse team key and issue number → Query by team.key +
+- Input: "ABC-123" → Parse team key and issue number → Query by team.key +
   issue.number → Return UUID
 
 **Project Resolution** (lines 398-415)
@@ -107,7 +107,7 @@ Linear API uses UUIDs internally, but users prefer human-readable identifiers:
 
 **Team Resolution** (lines 449-473)
 
-- Input: "ZCO" → Try team key first, then team name → Return team UUID
+- Input: "ABC" → Try team key first, then team name → Return team UUID
 
 ### GraphQL Optimization Pattern
 

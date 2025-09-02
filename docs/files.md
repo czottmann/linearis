@@ -2,7 +2,7 @@
 
 # Files Catalog
 
-The zco-linear-cli project follows a clean, modular structure with TypeScript
+Linearis project follows a clean, modular structure with TypeScript
 source files organized by function. The codebase separates concerns into command
 handlers, optimized GraphQL service layers, and type definitions, making it easy
 to locate functionality and understand system relationships.

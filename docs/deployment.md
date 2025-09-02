@@ -2,7 +2,7 @@
 
 # Deployment
 
-The zco-linear-cli deploys as a compiled Node.js application with automatic
+Linearis deploys as a compiled Node.js application with automatic
 builds during installation.
 Distribution supports npm packages, git-based installation, and standalone
 executables with automated TypeScript compilation ensuring consistency across
@@ -20,7 +20,7 @@ TypeScript to optimized JavaScript in the dist/ directory.
 **Direct Repository Install with Auto-Build** - Primary deployment method:
 
 ```bash
-npm install git+https://github.com/user/zco-linear-cli.git
+npm install git+https://github.com/czottmann/linearis.git
 # Automatically runs prepare script: clean + build
 # Creates dist/ with compiled JavaScript
 ```
@@ -29,7 +29,7 @@ npm install git+https://github.com/user/zco-linear-cli.git
 
 ```bash
 git clone <repository>
-cd zco-linear-cli
+cd linearis
 pnpm install  # Auto-builds via prepare script
 ```
 
@@ -38,14 +38,13 @@ pnpm install  # Auto-builds via prepare script
 ```bash
 npm link  # Creates global 'linear' command
 # Uses main: "dist/main.js" and bin: "dist/main.js"
-# 4.2x faster startup than development mode
 ```
 
 ### Package Distribution Options
 
 **NPM Package** - package.json configured for npm publishing:
 
-- Name: "zco-linear-cli" (line 2)
+- Name: "linearis" (line 2)
 - Version: "1.0.0" (line 3)
 - Author: "Carlo Zottmann <carlo@zottmann.dev>" (line 15)
 - License: "MIT" (line 16)
@@ -55,7 +54,6 @@ npm link  # Creates global 'linear' command
 ```bash
 # Create standalone binary from compiled output
 npx pkg dist/main.js --targets node22-linux-x64,node22-macos-x64,node22-win-x64
-# Benefits from 4.2x faster startup time
 ```
 
 ## Platform Deployment
@@ -100,7 +98,6 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 COPY src/ ./src/
 RUN npm install  # Auto-builds via prepare script
 ENTRYPOINT ["node", "dist/main.js"]
-# Uses compiled JavaScript for 4.2x faster container startup
 ```
 
 ## Reference
@@ -122,14 +119,11 @@ ENTRYPOINT ["node", "dist/main.js"]
 
 - TypeScript source files in src/ directory
 - Automated compilation to dist/ during install
-- Production execution via `node dist/main.js` (4.2x faster)
+- Production execution via `node dist/main.js`
 
 **Distribution Methods**:
 
 - Git install with auto-build: `npm install git+https://...`
-- NPM package for `npm install -g zco-linear-cli` 
-- Standalone executables for systems without Node.js
-- Container images with compiled JavaScript
 
 ### Configuration Files for Deployment
 
@@ -158,7 +152,7 @@ ENTRYPOINT ["node", "dist/main.js"]
 
 **Runtime Performance** - Compilation benchmarks:
 
-- Compiled JavaScript startup: ~0.15s (4.2x faster than development)
+- Compiled JavaScript startup: ~0.15s
 - Development tsx startup: ~0.64s (development only)
 - Production runtime: Sub-second for most operations
 - Memory usage: Minimal Node.js footprint
