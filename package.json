@@ -13,7 +13,6 @@
     "LICENSE.md"
   ],
   "scripts": {
-    "prebuild": "node -p \"'export const PKG_VERSION = ' + JSON.stringify(require('./package.json').version) + ';export const PKG_DESCRIPTION = ' + JSON.stringify(require('./package.json').description) + ';'\" > src/version.ts",
     "build": "tsc && chmod +x dist/main.js",
     "clean": "rm -rf dist/",
     "start": "tsx src/main.ts",
