@@ -17,7 +17,13 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "keywords": [],
+  "keywords": [
+    "linear",
+    "agents",
+    "llm",
+    "ticketing",
+    "cli"
+  ],
   "author": "Carlo Zottmann <carlo@zottmann.dev>",
   "license": "MIT",
   "packageManager": "pnpm@10.14.0",
