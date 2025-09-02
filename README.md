@@ -82,20 +82,16 @@ linearis usage
 linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 ```
 
-## Installation & Usage
+## Installation
 
 ```bash
-# Git-based install with automatic build (recommended)
-npm install -g github:czottmann/linearis
-linearis
+# Default installation
+npm install -g --install-links czottmann/linearis
 
 # Development setup
 git clone <repository> && cd linearis
 pnpm install  # Auto-builds via prepare script
 pnpm start  # Development mode (tsx)
-
-# Production execution
-linearis
 ```
 
 ## Authentication

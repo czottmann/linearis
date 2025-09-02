@@ -11,19 +11,19 @@ importers:
       '@linear/sdk':
         specifier: ^58.1.0
         version: 58.1.0
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.18.0
       commander:
         specifier: ^14.0.0
         version: 14.0.0
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.2
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.18.0
       tsx:
         specifier: ^4.20.5
         version: 4.20.5
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.2
 
 packages:
 
