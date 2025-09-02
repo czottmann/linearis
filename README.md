@@ -85,12 +85,13 @@ linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 ## Installation
 
 ```bash
-# Default installation
+# Install from GitHub (requires --install-links flag)
 npm install -g --install-links czottmann/linearis
 
 # Development setup
 git clone <repository> && cd linearis
-pnpm install  # Auto-builds via prepare script
+pnpm install
+pnpm run build  # Compile TypeScript to dist/
 pnpm start  # Development mode (tsx)
 ```
 
