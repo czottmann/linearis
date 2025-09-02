@@ -20,8 +20,8 @@ program.action(() => {
 });
 
 // Setup all subcommand groups
-setupCommentsCommands(program);
 setupIssuesCommands(program);
+setupCommentsCommands(program);
 setupLabelsCommands(program);
 setupProjectsCommands(program);
 
