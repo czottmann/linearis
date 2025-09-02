@@ -5,7 +5,7 @@
   "main": "./dist/main.js",
   "type": "module",
   "bin": {
-    "linearis": "dist/main.js"
+    "linearis": "./dist/main.js"
   },
   "files": [
     "dist/",
@@ -31,10 +31,6 @@
   "author": "Carlo Zottmann <carlo@zottmann.dev>",
   "license": "MIT",
   "packageManager": "pnpm@10.14.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/czottmann/linearis.git"
-  },
   "dependencies": {
     "@linear/sdk": "^58.1.0",
     "commander": "^14.0.0"
