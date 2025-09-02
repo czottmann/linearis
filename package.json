@@ -8,7 +8,7 @@
     "linearis": "./dist/main.js"
   },
   "files": [
-    "dist/*.js",
+    "dist/**/*.js",
     "README.md",
     "LICENSE.md"
   ],
