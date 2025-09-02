@@ -13,8 +13,8 @@
     "LICENSE.md"
   ],
   "scripts": {
-    "build": "tsc && chmod +x dist/main.js",
-    "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
+    "build": "tsc && chmod +x dist/main.js && rm dist/**.ts",
+    "clean": "rm -rf dist/",
     "start": "tsx src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
