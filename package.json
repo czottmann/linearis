@@ -2,10 +2,10 @@
   "name": "linearis",
   "version": "1.0.0",
   "description": "CLI tool for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.",
-  "main": "dist/main.js",
+  "main": "./dist/main.js",
   "type": "module",
   "bin": {
-    "linearis": "dist/main.js"
+    "linearis": "./dist/main.js"
   },
   "files": [
     "dist/",
@@ -13,11 +13,11 @@
     "LICENSE.md"
   ],
   "scripts": {
-    "build": "tsc && chmod +x dist/main.js && rm dist/**.ts",
+    "prebuild": "node -p \"'export const PKG_VERSION = ' + JSON.stringify(require('./package.json').version) + ';export const PKG_DESCRIPTION = ' + JSON.stringify(require('./package.json').description) + ';'\" > src/version.ts",
+    "build": "tsc && chmod +x dist/main.js",
     "clean": "rm -rf dist/",
     "start": "tsx src/main.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "tsc || true"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": ">=22.0.0"
