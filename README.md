@@ -1,10 +1,68 @@
-<!-- Generated: 2025-08-31T18:51:03+02:00 -->
+<!-- Generated: 2025-09-02T10:42:29+02:00 -->
 
 # Linearis: An opinionated Linear CLI client
 
 CLI tool for [Linear.app](https://linear.app) with JSON output, smart ID
 resolution, and optimized GraphQL queries. Designed for LLM agents and humans
 who prefer structured data.
+
+## Command Examples
+
+### Issues Management
+
+```bash
+# List recent issues
+linearis issues list -l 10
+
+# Search for bugs in specific team/project
+linearis issues search "authentication" --team Platform --project "Auth Service"
+
+# Create new issue with labels and assignment
+linearis issues create "Fix login timeout" --team Backend --assignee user123 \
+  --labels "Bug,Critical" --priority 1 --description "Users can't stay logged in"
+
+# Read issue details (supports ABC-123 format)  
+linearis issues read DEV-456
+
+# Update issue status and priority
+linearis issues update ABC-123 --state "In Review" --priority 2
+
+# Add labels to existing issue
+linearis issues update DEV-789 --labels "Frontend,UX" --label-by adding
+
+# Set parent-child relationships
+linearis issues update SUB-001 --parent-ticket EPIC-100
+
+# Clear all labels from issue
+linearis issues update ABC-123 --clear-labels
+```
+
+### Comments
+
+```bash
+# Add comment to issue
+linearis comments create ABC-123 --body "Fixed in PR #456"
+```
+
+### Projects & Labels
+
+```bash
+# List all projects
+linearis projects list
+
+# List labels for specific team
+linearis labels list --team Backend
+```
+
+### Advanced Usage
+
+```bash
+# Show all available commands and options
+linearis usage
+
+# Combine with other tools (pipe JSON output)
+linearis issues list -l 5 | jq '.data[0].title'
+```
 
 ## Installation & Usage
 
@@ -29,27 +87,6 @@ linearis
 linearis --api-token <token> issues list
 LINEAR_API_TOKEN=<token> linearis issues list  
 echo "<token>" > ~/.linear_api_token && linearis issues list
-```
-
-## Core Commands
-
-```bash
-# Print out tools & usage
-linearis
-
-# Print out *all* usage (a.k.a. "teach your LLM")
-linearis usage
-
-# Issues: list, search, create, read, update
-linearis issues list -l 25
-linearis issues search "bug" --team ABC --project "Mobile App"
-linearis issues create --title "Fix bug" --team ABC --labels "Bug,High Priority"
-linearis issues read ABC-123
-linearis issues update ABC-123 --state "In Progress" --priority 1
-
-# Projects: list, read
-linearis projects list
-linearis projects read "Mobile App"
 ```
 
 ## Documentation
