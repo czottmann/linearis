@@ -8,16 +8,13 @@
     "linearis": "dist/main.js"
   },
   "files": [
-    "src/",
-    "package.json",
+    "dist/",
     "README.md",
-    "LICENSE.md",
-    "tsconfig.json"
+    "LICENSE.md"
   ],
   "scripts": {
     "build": "tsc && chmod +x dist/main.js",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
-    "prepare": "npm run clean && npm run build",
     "start": "tsx src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -36,11 +33,11 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
-    "commander": "^14.0.0",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.0.0"
+    "commander": "^14.0.0"
   },
   "devDependencies": {
-    "tsx": "^4.20.5"
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.0.0"
   }
 }
