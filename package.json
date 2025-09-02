@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc && chmod +x dist/main.js",
     "clean": "rm -rf dist/",
+    "prepare": "npm run build",
     "start": "tsx src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -31,11 +32,11 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
-    "commander": "^14.0.0"
+    "commander": "^14.0.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.0.0"
+    "tsx": "^4.20.5"
   }
 }
