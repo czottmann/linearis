@@ -6,11 +6,29 @@ CLI tool for [Linear.app](https://linear.app) with JSON output, smart ID
 resolution, and optimized GraphQL queries. Designed for LLM agents and humans
 who prefer structured data.
 
+## Why?
+
+There was no Linear CLI client I was happy with. Also I want my LLM agents to
+work with Linear, but the official Linear MCP (while working fine) eats up ~13k
+tokens (!!) just by being connected. In comparison, `linearis usage` tells the
+LLM everything it needs to know and comes in well under 1000 tokens.
+
+**This project scratches my own itches,** and satisfies my own usage patterns of
+working with Linear: I **do** work with tickets/issues and comments on the
+command line; I **do not** manage projects or workspaces etc. there. YMMV.
+
 ## Command Examples
 
 ### Issues Management
 
 ```bash
+# Show available tools
+linearis
+
+# Show available sub-tools
+linearis issues
+linearis labels
+
 # List recent issues
 linearis issues list -l 10
 
@@ -57,18 +75,18 @@ linearis labels list --team Backend
 ### Advanced Usage
 
 ```bash
-# Show all available commands and options
+# Show all available commands and options (LLM agents love this!)
 linearis usage
 
 # Combine with other tools (pipe JSON output)
-linearis issues list -l 5 | jq '.data[0].title'
+linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 ```
 
 ## Installation & Usage
 
 ```bash
 # Git-based install with automatic build (recommended)
-npm install -g git+https://github.com/czottmann/linearis.git
+npm install -g github:czottmann/linearis
 linearis
 
 # Development setup
@@ -82,12 +100,50 @@ linearis
 
 ## Authentication
 
+You can authenticate by passing in your API token via `--api-token` flag:
+
 ```bash
-# Multiple authentication methods (choose one)
 linearis --api-token <token> issues list
-LINEAR_API_TOKEN=<token> linearis issues list  
-echo "<token>" > ~/.linear_api_token && linearis issues list
 ```
+
+… OR by storing it in an environment variable `LINEAR_API_TOKEN`:
+
+```bash
+LINEAR_API_TOKEN=<token> linearis issues list
+```
+
+… OR by storing it in `~/.linear_api_token` once, and then forgetting about it
+because the tool will check that file automatically:
+
+```bash
+# Save token once:
+echo "<token>" > ~/.linear_api_token
+
+# Day-to-day, just use the tool
+linearis issues list
+```
+
+### Getting a Linear API key/token
+
+1. Log in to your Linear account
+1. Go to _Settings_ → _Security & Access_ → _Personal API keys_
+1. Create a new API key
+
+## Author
+
+Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev,
+https://github.com/czottmann.
+
+This project is neither affiliated with nor endorsed by Linear. I'm just a very
+happy customer.
+
+> [!TIP]
+> I make Shortcuts-related macOS & iOS productivity apps like
+> [Actions For Obsidian](https://actions.work/actions-for-obsidian),
+> [Browser Actions](https://actions.work/browser-actions) (which adds Shortcuts
+> support for several major browsers), and
+> [BarCuts](https://actions.work/barcuts) (a surprisingly useful contextual
+> Shortcuts launcher). Check them out!
 
 ## Documentation
 
