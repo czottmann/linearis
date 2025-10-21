@@ -9,9 +9,9 @@ import { outputUsageInfo } from "./utils/usage.js";
 
 // Setup main program
 program
-  .name("linear")
+  .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("1.0.0")
+  .version("1.1.0")
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
