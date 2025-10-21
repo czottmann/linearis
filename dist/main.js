@@ -6,9 +6,9 @@ import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
 import { outputUsageInfo } from "./utils/usage.js";
 program
-    .name("linear")
+    .name("linearis")
     .description("CLI for Linear.app with JSON output")
-    .version("1.0.0")
+    .version("1.1.0")
     .option("--api-token <token>", "Linear API token");
 program.action(() => {
     program.help();
