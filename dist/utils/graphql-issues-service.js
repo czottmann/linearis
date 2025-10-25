@@ -112,6 +112,67 @@ export class GraphQLIssuesService {
             }
             finalProjectId = resolveResult.projects.nodes[0].id;
         }
+        let finalMilestoneId = args.milestoneId;
+        if (args.milestoneId && typeof args.milestoneId === 'string' && !isUuid(args.milestoneId)) {
+            resolveVariables.milestoneName = args.milestoneId;
+            if (resolveResult.projects?.nodes[0]?.milestones?.nodes) {
+                const projectMilestone = resolveResult.projects.nodes[0].milestones.nodes
+                    .find((m) => m.name === args.milestoneId);
+                if (projectMilestone) {
+                    finalMilestoneId = projectMilestone.id;
+                }
+            }
+            if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
+                finalMilestoneId = resolveResult.milestones.nodes[0].id;
+            }
+            if (!finalMilestoneId) {
+                throw new Error(`Milestone "${args.milestoneId}" not found`);
+            }
+        }
+        let finalCycleId = args.cycleId;
+        if (args.cycleId !== undefined && args.cycleId !== null) {
+            if (args.cycleId === null) {
+                finalCycleId = null;
+            }
+            else if (typeof args.cycleId === 'string' && !isUuid(args.cycleId)) {
+                let teamIdForCycle = resolveResult.issues?.nodes?.[0]?.team?.id;
+                if (!teamIdForCycle && resolvedIssueId && isUuid(resolvedIssueId)) {
+                    const issueTeamRes = await this.graphQLService.rawRequest(`query GetIssueTeam($issueId: String!) { issue(id: $issueId) { team { id } } }`, { issueId: resolvedIssueId });
+                    teamIdForCycle = issueTeamRes.issue?.team?.id;
+                }
+                if (teamIdForCycle) {
+                    const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: String!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId, teamId: teamIdForCycle });
+                    const scopedNodes = scopedRes.cycles?.nodes || [];
+                    if (scopedNodes.length === 1) {
+                        finalCycleId = scopedNodes[0].id;
+                    }
+                    else if (scopedNodes.length > 1) {
+                        let chosen = scopedNodes.find((n) => n.isActive) || scopedNodes.find((n) => n.isNext) || scopedNodes.find((n) => n.isPrevious);
+                        if (chosen)
+                            finalCycleId = chosen.id;
+                        else
+                            throw new Error(`Ambiguous cycle name "${args.cycleId}" for team ${teamIdForCycle}. Use ID or disambiguate.`);
+                    }
+                }
+                if (!finalCycleId) {
+                    const globalRes = await this.graphQLService.rawRequest(`query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId });
+                    const globalNodes = globalRes.cycles?.nodes || [];
+                    if (globalNodes.length === 1) {
+                        finalCycleId = globalNodes[0].id;
+                    }
+                    else if (globalNodes.length > 1) {
+                        let chosen = globalNodes.find((n) => n.isActive) || globalNodes.find((n) => n.isNext) || globalNodes.find((n) => n.isPrevious);
+                        if (chosen)
+                            finalCycleId = chosen.id;
+                        else
+                            throw new Error(`Ambiguous cycle name "${args.cycleId}" — multiple matches found across teams. Use ID or scope with team.`);
+                    }
+                }
+                if (!finalCycleId) {
+                    throw new Error(`Cycle "${args.cycleId}" not found`);
+                }
+            }
+        }
         let resolvedStateId = args.stateId;
         if (args.stateId && !isUuid(args.stateId)) {
             let teamId;
@@ -140,10 +201,14 @@ export class GraphQLIssuesService {
         }
         if (finalProjectId !== undefined)
             updateInput.projectId = finalProjectId;
+        if (finalCycleId !== undefined)
+            updateInput.cycleId = finalCycleId;
         if (args.estimate !== undefined)
             updateInput.estimate = args.estimate;
         if (args.parentId !== undefined)
             updateInput.parentId = args.parentId;
+        if (finalMilestoneId !== undefined)
+            updateInput.projectMilestoneId = finalMilestoneId;
         if (finalLabelIds !== undefined) {
             updateInput.labelIds = finalLabelIds;
         }
@@ -233,6 +298,24 @@ export class GraphQLIssuesService {
             }
             finalParentId = resolveResult.parentIssues.nodes[0].id;
         }
+        let finalCycleId = args.cycleId;
+        if (args.cycleId && typeof args.cycleId === 'string' && !isUuid(args.cycleId)) {
+            if (finalTeamId) {
+                const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: String!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 1) { nodes { id name } } }`, { name: args.cycleId, teamId: finalTeamId });
+                if (scopedRes.cycles?.nodes?.length) {
+                    finalCycleId = scopedRes.cycles.nodes[0].id;
+                }
+            }
+            if (!finalCycleId) {
+                const globalRes = await this.graphQLService.rawRequest(`query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`, { name: args.cycleId });
+                if (globalRes.cycles?.nodes?.length) {
+                    finalCycleId = globalRes.cycles.nodes[0].id;
+                }
+            }
+            if (!finalCycleId) {
+                throw new Error(`Cycle "${args.cycleId}" not found`);
+            }
+        }
         let resolvedStateId = args.stateId;
         if (args.stateId && !isUuid(args.stateId)) {
             resolvedStateId = await this.linearService.resolveStateId(args.stateId, finalTeamId);
@@ -261,6 +344,8 @@ export class GraphQLIssuesService {
             createInput.parentId = finalParentId;
         if (args.milestoneId)
             createInput.projectMilestoneId = args.milestoneId;
+        if (finalCycleId)
+            createInput.cycleId = finalCycleId;
         const createResult = await this.graphQLService.rawRequest(CREATE_ISSUE_MUTATION, {
             input: createInput,
         });
