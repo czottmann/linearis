@@ -72,6 +72,7 @@ export interface CreateIssueArgs {
   estimate?: number;
   parentId?: string;
   milestoneId?: string;
+  cycleId?: string;
 }
 
 export interface UpdateIssueArgs {
@@ -85,6 +86,8 @@ export interface UpdateIssueArgs {
   labelIds?: string[];
   estimate?: number;
   parentId?: string;
+  milestoneId?: string | null;
+  cycleId?: string | null;
 }
 
 export interface SearchIssuesArgs {

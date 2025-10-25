@@ -53,6 +53,7 @@ export function setupIssuesCommands(program) {
         .option("--team <team>", "team key, name, or ID (required if not specified)")
         .option("--labels <labels>", "labels (comma-separated names or IDs)")
         .option("--milestone <milestone>", "milestone name or ID (requires --project)")
+        .option("--cycle <cycle>", "cycle name or ID (requires --team)")
         .option("--status <status>", "status name or ID")
         .option("--parent-ticket <parentId>", "parent issue ID or identifier")
         .action(handleAsyncCommand(async (title, options, command) => {
@@ -76,6 +77,7 @@ export function setupIssuesCommands(program) {
             labelIds,
             parentId: options.parentTicket,
             milestoneId: options.milestone,
+            cycleId: options.cycle,
         };
         const result = await issuesService.createIssue(createArgs);
         outputSuccess(result);
@@ -108,9 +110,21 @@ export function setupIssuesCommands(program) {
         .optionsGroup("Parent ticket-related options:")
         .option("--parent-ticket <parentId>", "set parent issue ID or identifier")
         .option("--clear-parent-ticket", "clear existing parent relationship")
+        .optionsGroup("Milestone-related options:")
+        .option("--milestone <milestone>", "set milestone (can use name or ID, will try to resolve within project context first)")
+        .option("--clear-milestone", "clear existing milestone assignment")
+        .optionsGroup("Cycle-related options:")
+        .option("--cycle <cycle>", "set cycle (can use name or ID, will try to resolve within team context first)")
+        .option("--clear-cycle", "clear existing cycle assignment")
         .action(handleAsyncCommand(async (issueId, options, command) => {
         if (options.parentTicket && options.clearParentTicket) {
             throw new Error("Cannot use --parent-ticket and --clear-parent-ticket together");
+        }
+        if (options.milestone && options.clearMilestone) {
+            throw new Error("Cannot use --milestone and --clear-milestone together");
+        }
+        if (options.cycle && options.clearCycle) {
+            throw new Error("Cannot use --cycle and --clear-cycle together");
         }
         if (options.labelBy && !options.labels) {
             throw new Error("--label-by requires --labels to be specified");
@@ -149,6 +163,9 @@ export function setupIssuesCommands(program) {
             labelIds,
             parentId: options.parentTicket ||
                 (options.clearParentTicket ? null : undefined),
+            milestoneId: options.milestone ||
+                (options.clearMilestone ? null : undefined),
+            cycleId: options.cycle || (options.clearCycle ? null : undefined),
         };
         const labelMode = options.labelBy || "adding";
         const result = await issuesService.updateIssue(updateArgs, labelMode);
