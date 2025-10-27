@@ -21,3 +21,6 @@ npm-debug.log*
 # OS generated files
 .DS_Store
 ._*
+
+# Catalyst dev thoughts
+thoughts/

@@ -128,9 +128,9 @@ export class LinearService {
           name: lead.name,
         }
         : undefined,
-      targetDate: project.targetDate?.toISOString(),
-      createdAt: project.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: project.updatedAt?.toISOString() || new Date().toISOString(),
+      targetDate: project.targetDate ? String(project.targetDate) : undefined,
+      createdAt: project.createdAt ? String(project.createdAt) : new Date().toISOString(),
+      updatedAt: project.updatedAt ? String(project.updatedAt) : new Date().toISOString(),
     }));
   }
 
