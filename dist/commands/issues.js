@@ -52,7 +52,7 @@ export function setupIssuesCommands(program) {
         .option("--project <project>", "add to project (name or ID)")
         .option("--team <team>", "team key, name, or ID (required if not specified)")
         .option("--labels <labels>", "labels (comma-separated names or IDs)")
-        .option("--milestone <milestone>", "milestone name or ID (requires --project)")
+        .option("--project-milestone <milestone>", "project milestone name or ID (requires --project)")
         .option("--cycle <cycle>", "cycle name or ID (requires --team)")
         .option("--status <status>", "status name or ID")
         .option("--parent-ticket <parentId>", "parent issue ID or identifier")
@@ -76,7 +76,7 @@ export function setupIssuesCommands(program) {
             stateId: options.status,
             labelIds,
             parentId: options.parentTicket,
-            milestoneId: options.milestone,
+            milestoneId: options.projectMilestone,
             cycleId: options.cycle,
         };
         const result = await issuesService.createIssue(createArgs);
@@ -110,9 +110,9 @@ export function setupIssuesCommands(program) {
         .optionsGroup("Parent ticket-related options:")
         .option("--parent-ticket <parentId>", "set parent issue ID or identifier")
         .option("--clear-parent-ticket", "clear existing parent relationship")
-        .optionsGroup("Milestone-related options:")
-        .option("--milestone <milestone>", "set milestone (can use name or ID, will try to resolve within project context first)")
-        .option("--clear-milestone", "clear existing milestone assignment")
+        .optionsGroup("Project milestone-related options:")
+        .option("--project-milestone <milestone>", "set project milestone (can use name or ID, will try to resolve within project context first)")
+        .option("--clear-project-milestone", "clear existing project milestone assignment")
         .optionsGroup("Cycle-related options:")
         .option("--cycle <cycle>", "set cycle (can use name or ID, will try to resolve within team context first)")
         .option("--clear-cycle", "clear existing cycle assignment")
@@ -120,8 +120,8 @@ export function setupIssuesCommands(program) {
         if (options.parentTicket && options.clearParentTicket) {
             throw new Error("Cannot use --parent-ticket and --clear-parent-ticket together");
         }
-        if (options.milestone && options.clearMilestone) {
-            throw new Error("Cannot use --milestone and --clear-milestone together");
+        if (options.projectMilestone && options.clearProjectMilestone) {
+            throw new Error("Cannot use --project-milestone and --clear-project-milestone together");
         }
         if (options.cycle && options.clearCycle) {
             throw new Error("Cannot use --cycle and --clear-cycle together");
@@ -163,8 +163,8 @@ export function setupIssuesCommands(program) {
             labelIds,
             parentId: options.parentTicket ||
                 (options.clearParentTicket ? null : undefined),
-            milestoneId: options.milestone ||
-                (options.clearMilestone ? null : undefined),
+            milestoneId: options.projectMilestone ||
+                (options.clearProjectMilestone ? null : undefined),
             cycleId: options.cycle || (options.clearCycle ? null : undefined),
         };
         const labelMode = options.labelBy || "adding";

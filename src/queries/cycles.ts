@@ -25,6 +25,33 @@ export const GET_CYCLES_QUERY = `
   }
 `;
 
+export const GET_CYCLES_LIST_QUERY = `
+  query GetCyclesList($first: Int!, $teamKey: String, $isActive: Boolean) {
+    cycles(first: $first, filter: { and: [
+      { team: { key: { eq: $teamKey } } }
+      { isActive: { eq: $isActive } }
+    ] }) {
+      nodes {
+        id
+        name
+        number
+        startsAt
+        endsAt
+        isActive
+        isPrevious
+        isNext
+        progress
+        issueCountHistory
+        team {
+          id
+          key
+          name
+        }
+      }
+    }
+  }
+`;
+
 export const GET_CYCLE_BY_ID_QUERY = `
   query GetCycle($id: String!, $issuesFirst: Int) {
     cycle(id: $id) {

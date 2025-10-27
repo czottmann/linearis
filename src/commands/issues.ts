@@ -82,8 +82,8 @@ export function setupIssuesCommands(program: Command): void {
     )
     .option("--labels <labels>", "labels (comma-separated names or IDs)")
     .option(
-      "--milestone <milestone>",
-      "milestone name or ID (requires --project)",
+      "--project-milestone <milestone>",
+      "project milestone name or ID (requires --project)",
     )
     .option(
       "--cycle <cycle>",
@@ -119,7 +119,7 @@ export function setupIssuesCommands(program: Command): void {
             stateId: options.status,
             labelIds, // GraphQL service handles label resolution
             parentId: options.parentTicket, // GraphQL service handles parent resolution
-            milestoneId: options.milestone,
+            milestoneId: options.projectMilestone,
             cycleId: options.cycle,
           };
 
@@ -177,12 +177,12 @@ export function setupIssuesCommands(program: Command): void {
     .optionsGroup("Parent ticket-related options:")
     .option("--parent-ticket <parentId>", "set parent issue ID or identifier")
     .option("--clear-parent-ticket", "clear existing parent relationship")
-    .optionsGroup("Milestone-related options:")
+    .optionsGroup("Project milestone-related options:")
     .option(
-      "--milestone <milestone>",
-      "set milestone (can use name or ID, will try to resolve within project context first)"
+      "--project-milestone <milestone>",
+      "set project milestone (can use name or ID, will try to resolve within project context first)"
     )
-    .option("--clear-milestone", "clear existing milestone assignment")
+    .option("--clear-project-milestone", "clear existing project milestone assignment")
     .optionsGroup("Cycle-related options:")
     .option(
       "--cycle <cycle>",
@@ -200,9 +200,9 @@ export function setupIssuesCommands(program: Command): void {
           }
 
           // Check for mutually exclusive milestone flags
-          if (options.milestone && options.clearMilestone) {
+          if (options.projectMilestone && options.clearProjectMilestone) {
             throw new Error(
-              "Cannot use --milestone and --clear-milestone together",
+              "Cannot use --project-milestone and --clear-project-milestone together",
             );
           }
 
@@ -273,8 +273,8 @@ export function setupIssuesCommands(program: Command): void {
             labelIds,
             parentId: options.parentTicket ||
               (options.clearParentTicket ? null : undefined),
-            milestoneId: options.milestone ||
-              (options.clearMilestone ? null : undefined),
+            milestoneId: options.projectMilestone ||
+              (options.clearProjectMilestone ? null : undefined),
             cycleId: options.cycle || (options.clearCycle ? null : undefined),
           };
 

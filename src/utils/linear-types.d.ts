@@ -20,6 +20,16 @@ export interface LinearIssue {
     id: string;
     name: string;
   };
+  cycle?: {
+    id: string;
+    name: string;
+    number: number;
+  };
+  projectMilestone?: {
+    id: string;
+    name: string;
+    targetDate?: string;
+  };
   priority: number;
   estimate?: number;
   labels: Array<{
@@ -128,4 +138,49 @@ export interface LinearComment {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LinearProjectMilestone {
+  id: string;
+  name: string;
+  description?: string;
+  targetDate?: string;
+  sortOrder: number;
+  project: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LinearProjectMilestoneWithIssues extends LinearProjectMilestone {
+  issues: LinearIssue[];
+}
+
+export interface ListProjectMilestonesArgs {
+  projectId: string;  // Project name or UUID (will be resolved)
+  limit?: number;
+}
+
+export interface GetProjectMilestoneArgs {
+  milestoneId: string;  // Milestone name or UUID (will be resolved)
+  projectId?: string;   // Optional project context for name resolution
+  issuesFirst?: number; // How many issues to fetch
+}
+
+export interface CreateProjectMilestoneArgs {
+  name: string;
+  projectId: string;    // Project name or UUID (will be resolved)
+  description?: string;
+  targetDate?: string;  // ISO date string
+}
+
+export interface UpdateProjectMilestoneArgs {
+  id: string;           // Milestone ID or name (will be resolved)
+  projectId?: string;   // Optional project context for name resolution
+  name?: string;
+  description?: string;
+  targetDate?: string;  // ISO date string
+  sortOrder?: number;
 }

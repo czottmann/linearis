@@ -1,6 +1,6 @@
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
-import { GET_CYCLES_QUERY, GET_CYCLE_BY_ID_QUERY, FIND_CYCLE_BY_NAME_SCOPED, FIND_CYCLE_BY_NAME_GLOBAL, } from "../queries/cycles.js";
+import { GET_CYCLES_LIST_QUERY, GET_CYCLE_BY_ID_QUERY, FIND_CYCLE_BY_NAME_SCOPED, FIND_CYCLE_BY_NAME_GLOBAL, } from "../queries/cycles.js";
 import { isUuid } from "../utils/uuid.js";
 export function setupCyclesCommands(program) {
     const cycles = program.command("cycles").description("Cycle operations");
@@ -20,7 +20,7 @@ export function setupCyclesCommands(program) {
             const n = parseInt(options.aroundActive);
             if (isNaN(n) || n < 0)
                 throw new Error("--around-active requires a non-negative integer");
-            const activeRes = await graphQLService.rawRequest(GET_CYCLES_QUERY, {
+            const activeRes = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, {
                 first: 1,
                 teamKey: options.team,
                 isActive: true,
@@ -32,7 +32,7 @@ export function setupCyclesCommands(program) {
             const activeNumber = Number(active.number || 0);
             const min = activeNumber - n;
             const max = activeNumber + n;
-            const fetchRes = await graphQLService.rawRequest(GET_CYCLES_QUERY, {
+            const fetchRes = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, {
                 first: Math.max(parseInt(options.limit), 100),
                 teamKey: options.team,
             });
@@ -48,7 +48,7 @@ export function setupCyclesCommands(program) {
             vars.teamKey = options.team;
         if (options.active)
             vars.isActive = true;
-        const result = await graphQLService.rawRequest(GET_CYCLES_QUERY, vars);
+        const result = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, vars);
         outputSuccess(result.cycles?.nodes || []);
     }));
     cycles.command("read <cycleIdOrName>")

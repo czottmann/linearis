@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 import {
+  GET_CYCLES_LIST_QUERY,
   GET_CYCLES_QUERY,
   GET_CYCLE_BY_ID_QUERY,
   FIND_CYCLE_BY_NAME_SCOPED,
@@ -35,7 +36,7 @@ export function setupCyclesCommands(program: Command): void {
           if (isNaN(n) || n < 0) throw new Error("--around-active requires a non-negative integer");
 
           // Find the active cycle for the team
-          const activeRes = await graphQLService.rawRequest(GET_CYCLES_QUERY, {
+          const activeRes = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, {
             first: 1,
             teamKey: options.team,
             isActive: true,
@@ -50,7 +51,7 @@ export function setupCyclesCommands(program: Command): void {
           const max = activeNumber + n;
 
           // Fetch a broader set for the team and filter by number range
-          const fetchRes = await graphQLService.rawRequest(GET_CYCLES_QUERY, {
+          const fetchRes = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, {
             first: Math.max(parseInt(options.limit), 100),
             teamKey: options.team,
           });
@@ -67,7 +68,7 @@ export function setupCyclesCommands(program: Command): void {
         if (options.team) vars.teamKey = options.team;
         if (options.active) vars.isActive = true;
 
-        const result = await graphQLService.rawRequest(GET_CYCLES_QUERY, vars);
+        const result = await graphQLService.rawRequest(GET_CYCLES_LIST_QUERY, vars);
         outputSuccess(result.cycles?.nodes || []);
       }),
     );

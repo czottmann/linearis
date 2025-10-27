@@ -148,8 +148,6 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
     $teamKey: String
     $issueNumber: Float
     $milestoneName: String
-    $cycleName: String
-    $issueTeamId: String
   ) {
     # Resolve labels if provided
     labels: issueLabels(filter: { name: { in: $labelNames } }) {
@@ -175,7 +173,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
       nodes {
         id
         name
-        milestones {
+        projectMilestones {
           nodes {
             id
             name
@@ -255,7 +253,6 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
     $teamKey: String
     $teamName: String
     $projectName: String
-    $cycleName: String
     $labelNames: [String!]
     $parentTeamKey: String
     $parentIssueNumber: Float
@@ -282,7 +279,7 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
       nodes {
         id
         name
-        milestones {
+        projectMilestones {
           nodes { id name }
         }
         # Projects don't own cycles directly, but include teams for context if needed

@@ -73,6 +73,9 @@ export class GraphQLIssuesService {
         if (args.projectId && !isUuid(args.projectId)) {
             resolveVariables.projectName = args.projectId;
         }
+        if (args.milestoneId && typeof args.milestoneId === 'string' && !isUuid(args.milestoneId)) {
+            resolveVariables.milestoneName = args.milestoneId;
+        }
         const resolveResult = await this.graphQLService.rawRequest(BATCH_RESOLVE_FOR_UPDATE_QUERY, resolveVariables);
         if (!isUuid(args.id)) {
             if (!resolveResult.issues.nodes.length) {
@@ -114,9 +117,8 @@ export class GraphQLIssuesService {
         }
         let finalMilestoneId = args.milestoneId;
         if (args.milestoneId && typeof args.milestoneId === 'string' && !isUuid(args.milestoneId)) {
-            resolveVariables.milestoneName = args.milestoneId;
-            if (resolveResult.projects?.nodes[0]?.milestones?.nodes) {
-                const projectMilestone = resolveResult.projects.nodes[0].milestones.nodes
+            if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
+                const projectMilestone = resolveResult.projects.nodes[0].projectMilestones.nodes
                     .find((m) => m.name === args.milestoneId);
                 if (projectMilestone) {
                     finalMilestoneId = projectMilestone.id;
@@ -141,7 +143,7 @@ export class GraphQLIssuesService {
                     teamIdForCycle = issueTeamRes.issue?.team?.id;
                 }
                 if (teamIdForCycle) {
-                    const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: String!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId, teamId: teamIdForCycle });
+                    const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId, teamId: teamIdForCycle });
                     const scopedNodes = scopedRes.cycles?.nodes || [];
                     if (scopedNodes.length === 1) {
                         finalCycleId = scopedNodes[0].id;
@@ -237,6 +239,9 @@ export class GraphQLIssuesService {
         if (args.projectId && !isUuid(args.projectId)) {
             resolveVariables.projectName = args.projectId;
         }
+        if (args.milestoneId && !isUuid(args.milestoneId)) {
+            resolveVariables.milestoneName = args.milestoneId;
+        }
         if (args.labelIds && Array.isArray(args.labelIds)) {
             const labelNames = args.labelIds.filter((id) => !isUuid(id));
             if (labelNames.length > 0) {
@@ -298,10 +303,26 @@ export class GraphQLIssuesService {
             }
             finalParentId = resolveResult.parentIssues.nodes[0].id;
         }
+        let finalMilestoneId = args.milestoneId;
+        if (args.milestoneId && !isUuid(args.milestoneId)) {
+            if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
+                const projectMilestone = resolveResult.projects.nodes[0].projectMilestones.nodes
+                    .find((m) => m.name === args.milestoneId);
+                if (projectMilestone) {
+                    finalMilestoneId = projectMilestone.id;
+                }
+            }
+            if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
+                finalMilestoneId = resolveResult.milestones.nodes[0].id;
+            }
+            if (!finalMilestoneId) {
+                throw new Error(`Milestone "${args.milestoneId}" not found`);
+            }
+        }
         let finalCycleId = args.cycleId;
         if (args.cycleId && typeof args.cycleId === 'string' && !isUuid(args.cycleId)) {
             if (finalTeamId) {
-                const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: String!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 1) { nodes { id name } } }`, { name: args.cycleId, teamId: finalTeamId });
+                const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 1) { nodes { id name } } }`, { name: args.cycleId, teamId: finalTeamId });
                 if (scopedRes.cycles?.nodes?.length) {
                     finalCycleId = scopedRes.cycles.nodes[0].id;
                 }
@@ -342,8 +363,8 @@ export class GraphQLIssuesService {
             createInput.estimate = args.estimate;
         if (finalParentId)
             createInput.parentId = finalParentId;
-        if (args.milestoneId)
-            createInput.projectMilestoneId = args.milestoneId;
+        if (finalMilestoneId)
+            createInput.projectMilestoneId = finalMilestoneId;
         if (finalCycleId)
             createInput.cycleId = finalCycleId;
         const createResult = await this.graphQLService.rawRequest(CREATE_ISSUE_MUTATION, {
@@ -475,6 +496,20 @@ export class GraphQLIssuesService {
                 ? {
                     id: issue.project.id,
                     name: issue.project.name,
+                }
+                : undefined,
+            cycle: issue.cycle
+                ? {
+                    id: issue.cycle.id,
+                    name: issue.cycle.name,
+                    number: issue.cycle.number,
+                }
+                : undefined,
+            projectMilestone: issue.projectMilestone
+                ? {
+                    id: issue.projectMilestone.id,
+                    name: issue.projectMilestone.name,
+                    targetDate: issue.projectMilestone.targetDate || undefined,
                 }
                 : undefined,
             priority: issue.priority,
