@@ -24,3 +24,9 @@ npm-debug.log*
 
 # Catalyst dev thoughts
 thoughts/
+
+# Test scripts
+test-pr4.sh
+
+# Test coverage
+coverage/
