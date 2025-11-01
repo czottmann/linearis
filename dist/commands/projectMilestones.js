@@ -4,7 +4,7 @@ import { LIST_PROJECT_MILESTONES_QUERY, GET_PROJECT_MILESTONE_BY_ID_QUERY, FIND_
 import { isUuid } from "../utils/uuid.js";
 export function setupProjectMilestonesCommands(program) {
     const projectMilestones = program
-        .command("projectMilestones")
+        .command("project-milestones")
         .description("Project milestone operations");
     projectMilestones.action(() => projectMilestones.help());
     projectMilestones
