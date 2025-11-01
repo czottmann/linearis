@@ -41,6 +41,20 @@ export const ISSUE_LABELS_FRAGMENT = `
     }
   }
 `;
+export const ISSUE_CYCLE_FRAGMENT = `
+  cycle {
+    id
+    name
+    number
+  }
+`;
+export const ISSUE_PROJECT_MILESTONE_FRAGMENT = `
+  projectMilestone {
+    id
+    name
+    targetDate
+  }
+`;
 export const ISSUE_COMMENTS_FRAGMENT = `
   comments {
     nodes {
@@ -62,6 +76,8 @@ export const COMPLETE_ISSUE_FRAGMENT = `
   ${ISSUE_TEAM_FRAGMENT}
   ${ISSUE_PROJECT_FRAGMENT}
   ${ISSUE_LABELS_FRAGMENT}
+  ${ISSUE_CYCLE_FRAGMENT}
+  ${ISSUE_PROJECT_MILESTONE_FRAGMENT}
 `;
 export const COMPLETE_ISSUE_WITH_COMMENTS_FRAGMENT = `
   ${COMPLETE_ISSUE_FRAGMENT}

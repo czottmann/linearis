@@ -72,6 +72,37 @@ linearis projects list
 linearis labels list --team Backend
 ```
 
+### Cycles
+
+You can list and read cycles (sprints) for teams. The CLI exposes simple helpers,
+but the GraphQL API provides a few cycle-related fields you can use to
+identify relatives (active, next, previous).
+
+```bash
+# List cycles (optionally scope to a team)
+linearis cycles list --team Backend --limit 10
+
+# Show only the active cycle(s) for a team
+linearis cycles list --team Backend --active
+
+# Read a cycle by ID or by name (optionally scope name lookup with --team)
+linearis cycles read "Sprint 2025-10" --team Backend
+```
+
+Ordering and getting "active +/- 1"
+- The cycles returned by the API include fields `isActive`, `isNext`, `isPrevious`
+  and a numerical `number` field. The CLI will prefer an active/next/previous
+  candidate when resolving ambiguous cycle names.
+- To get the active and the next cycle programmatically, do two calls locally:
+  1) `linearis cycles list --team Backend --active --limit 1` to get the active
+     cycle and its `number`.
+  2) `linearis cycles list --team Backend --limit 10` and pick the cycle with
+     `number = (active.number + 1)` or check `isNext` on the returned nodes.
+- If multiple cycles match a name and none is marked active/next/previous, the
+  CLI will return an error listing the candidates so you can use a precise ID
+  or scope with `--team`.
+
+
 ### Advanced Usage
 
 ```bash
