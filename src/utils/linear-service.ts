@@ -333,6 +333,175 @@ export class LinearService {
       updatedAt: comment.updatedAt.toISOString(),
     };
   }
+
+  /**
+   * Get all cycles with automatic pagination
+   */
+  async getCycles(teamFilter?: string, activeOnly?: boolean): Promise<any[]> {
+    const filter: any = {};
+
+    if (teamFilter) {
+      const teamId = await this.resolveTeamId(teamFilter);
+      filter.team = { id: { eq: teamId } };
+    }
+
+    if (activeOnly) {
+      filter.isActive = { eq: true };
+    }
+
+    const cyclesConnection = await this.client.cycles({
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      orderBy: "createdAt" as any,
+      first: 250,
+    });
+
+    // Fetch all relationships in parallel for all cycles
+    const cyclesWithData = await Promise.all(
+      cyclesConnection.nodes.map(async (cycle) => {
+        const team = await cycle.team;
+        return {
+          id: cycle.id,
+          name: cycle.name,
+          number: cycle.number,
+          startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
+          endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
+          isActive: cycle.isActive,
+          isPrevious: cycle.isPrevious,
+          isNext: cycle.isNext,
+          progress: cycle.progress,
+          issueCountHistory: cycle.issueCountHistory,
+          team: team ? {
+            id: team.id,
+            key: team.key,
+            name: team.name,
+          } : undefined,
+        };
+      })
+    );
+
+    return cyclesWithData;
+  }
+
+  /**
+   * Get single cycle by ID with issues
+   */
+  async getCycleById(cycleId: string, issuesLimit: number = 50): Promise<any> {
+    const cycle = await this.client.cycle(cycleId);
+
+    const [team, issuesConnection] = await Promise.all([
+      cycle.team,
+      cycle.issues({ first: issuesLimit }),
+    ]);
+
+    const issues = [];
+    for (const issue of issuesConnection.nodes) {
+      const [state, assignee, issueTeam, project, labels] = await Promise.all([
+        issue.state,
+        issue.assignee,
+        issue.team,
+        issue.project,
+        issue.labels(),
+      ]);
+
+      issues.push({
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        description: issue.description || undefined,
+        priority: issue.priority,
+        estimate: issue.estimate || undefined,
+        state: state ? { id: state.id, name: state.name } : undefined,
+        assignee: assignee ? { id: assignee.id, name: assignee.name } : undefined,
+        team: issueTeam ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name } : undefined,
+        project: project ? { id: project.id, name: project.name } : undefined,
+        labels: labels.nodes.map((label: any) => ({ id: label.id, name: label.name })),
+        createdAt: issue.createdAt ? String(issue.createdAt) : new Date().toISOString(),
+        updatedAt: issue.updatedAt ? String(issue.updatedAt) : new Date().toISOString(),
+      });
+    }
+
+    return {
+      id: cycle.id,
+      name: cycle.name,
+      number: cycle.number,
+      startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
+      endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
+      isActive: cycle.isActive,
+      progress: cycle.progress,
+      issueCountHistory: cycle.issueCountHistory,
+      team: team ? {
+        id: team.id,
+        key: team.key,
+        name: team.name,
+      } : undefined,
+      issues,
+    };
+  }
+
+  /**
+   * Resolve cycle by name or ID
+   */
+  async resolveCycleId(cycleNameOrId: string, teamFilter?: string): Promise<string> {
+    // Return UUID as-is
+    if (isUuid(cycleNameOrId)) {
+      return cycleNameOrId;
+    }
+
+    // Build filter for name-based lookup
+    const filter: any = {
+      name: { eq: cycleNameOrId },
+    };
+
+    // If teamId is provided, filter by team
+    if (teamFilter) {
+      const teamId = await this.resolveTeamId(teamFilter);
+      filter.team = { id: { eq: teamId } };
+    }
+
+    const cyclesConnection = await this.client.cycles({
+      filter,
+      first: 10,
+    });
+
+    const cyclesData = cyclesConnection.nodes;
+
+    const nodes = [];
+    for (const cycle of cyclesData) {
+      const team = await cycle.team;
+      nodes.push({
+        id: cycle.id,
+        name: cycle.name,
+        number: cycle.number,
+        startsAt: cycle.startsAt,
+        isActive: cycle.isActive,
+        isNext: cycle.isNext,
+        isPrevious: cycle.isPrevious,
+        team: team ? { id: team.id, key: team.key, name: team.name } : undefined,
+      });
+    }
+
+    if (nodes.length === 0) {
+      const context = teamFilter ? ` for team ${teamFilter}` : "";
+      throw new Error(`Cycle "${cycleNameOrId}"${context} not found`);
+    }
+
+    // Disambiguate: prefer active, then next, then previous
+    let chosen = nodes.find((n: any) => n.isActive);
+    if (!chosen) chosen = nodes.find((n: any) => n.isNext);
+    if (!chosen) chosen = nodes.find((n: any) => n.isPrevious);
+    if (!chosen && nodes.length === 1) chosen = nodes[0];
+
+    if (!chosen) {
+      const list = nodes.map((n: any) =>
+        `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`
+      ).join("; ");
+      throw new Error(
+        `Ambiguous cycle name "${cycleNameOrId}" — multiple matches found: ${list}. Please use an ID or scope with --team.`
+      );
+    }
+
+    return chosen.id;
+  }
 }
 
 /**

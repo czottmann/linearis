@@ -13,7 +13,7 @@ import { isUuid } from "../utils/uuid.js";
 
 export function setupProjectMilestonesCommands(program: Command): void {
   const projectMilestones = program
-    .command("projectMilestones")
+    .command("project-milestones")
     .description("Project milestone operations");
 
   projectMilestones.action(() => projectMilestones.help());

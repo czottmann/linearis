@@ -1,3 +1,9 @@
+/**
+ * DEPRECATED: Cycles commands now use LinearService with SDK pagination.
+ * These queries are preserved for reference but not used in production code.
+ * See: src/utils/linear-service.ts getCycles(), getCycleById(), resolveCycleId()
+ */
+
 import { COMPLETE_ISSUE_FRAGMENT } from "./common.js";
 
 export const GET_CYCLES_QUERY = `
