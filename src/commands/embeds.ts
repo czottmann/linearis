@@ -26,7 +26,7 @@ export function setupEmbedsCommands(program: Command): void {
       handleAsyncCommand(
         async (url: string, options: any, command: Command) => {
           // Get API token from parent command options
-          const apiToken = getApiToken(command.parent!.parent!.opts());
+          const apiToken = await getApiToken(command.parent!.parent!.opts());
 
           // Create file service and download
           const fileService = new FileService(apiToken);
