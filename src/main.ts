@@ -2,6 +2,7 @@
 
 import { program } from "commander";
 import { setupCommentsCommands } from "./commands/comments.js";
+import { setupEmbedsCommands } from "./commands/embeds.js";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
@@ -24,6 +25,7 @@ setupIssuesCommands(program);
 setupCommentsCommands(program);
 setupLabelsCommands(program);
 setupProjectsCommands(program);
+setupEmbedsCommands(program);
 
 // Add usage command
 program.command("usage")
