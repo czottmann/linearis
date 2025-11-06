@@ -1,4 +1,5 @@
 import { BATCH_RESOLVE_FOR_CREATE_QUERY, BATCH_RESOLVE_FOR_SEARCH_QUERY, BATCH_RESOLVE_FOR_UPDATE_QUERY, CREATE_ISSUE_MUTATION, FILTERED_SEARCH_ISSUES_QUERY, GET_ISSUE_BY_ID_QUERY, GET_ISSUE_BY_IDENTIFIER_QUERY, GET_ISSUES_QUERY, SEARCH_ISSUES_QUERY, UPDATE_ISSUE_MUTATION, } from "../queries/issues.js";
+import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
 export class GraphQLIssuesService {
     graphQLService;
@@ -371,6 +372,7 @@ export class GraphQLIssuesService {
             identifier: issue.identifier,
             title: issue.title,
             description: issue.description || undefined,
+            embeds: issue.description ? extractEmbeds(issue.description) : undefined,
             state: {
                 id: issue.state.id,
                 name: issue.state.name,
@@ -401,6 +403,7 @@ export class GraphQLIssuesService {
             comments: issue.comments?.nodes.map((comment) => ({
                 id: comment.id,
                 body: comment.body,
+                embeds: extractEmbeds(comment.body),
                 user: {
                     id: comment.user.id,
                     name: comment.user.name,

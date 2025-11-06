@@ -18,6 +18,7 @@ import type {
   SearchIssuesArgs,
   UpdateIssueArgs,
 } from "./linear-types.js";
+import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
 
 /**
@@ -580,6 +581,7 @@ export class GraphQLIssuesService {
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description || undefined,
+      embeds: issue.description ? extractEmbeds(issue.description) : undefined,
       state: {
         id: issue.state.id,
         name: issue.state.name,
@@ -610,6 +612,7 @@ export class GraphQLIssuesService {
       comments: issue.comments?.nodes.map((comment: any) => ({
         id: comment.id,
         body: comment.body,
+        embeds: extractEmbeds(comment.body),
         user: {
           id: comment.user.id,
           name: comment.user.name,
