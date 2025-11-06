@@ -4,7 +4,12 @@ export class GraphQLService {
     graphQLClient;
     client;
     constructor(apiToken) {
-        this.client = new LinearClient({ apiKey: apiToken });
+        this.client = new LinearClient({
+            apiKey: apiToken,
+            headers: {
+                "public-file-urls-expire-in": "3600",
+            },
+        });
         this.graphQLClient = this.client.client;
     }
     async rawRequest(query, variables) {
