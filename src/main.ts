@@ -12,7 +12,7 @@ import { outputUsageInfo } from "./utils/usage.js";
 program
   .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("1.1.0")
+  .version("2025.11.1")
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
