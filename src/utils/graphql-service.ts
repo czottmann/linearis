@@ -10,7 +10,12 @@ export class GraphQLService {
   private client: LinearClient;
 
   constructor(apiToken: string) {
-    this.client = new LinearClient({ apiKey: apiToken });
+    this.client = new LinearClient({
+      apiKey: apiToken,
+      headers: {
+        "public-file-urls-expire-in": "3600", // 1 hour expiry for signed URLs
+      },
+    });
     this.graphQLClient = this.client.client;
   }
 
