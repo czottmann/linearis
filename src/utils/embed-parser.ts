@@ -1,0 +1,82 @@
+/**
+ * Utility functions for extracting embedded file URLs from markdown content.
+ * Focuses on Linear's private cloud storage URLs (uploads.linear.app).
+ */
+
+export interface EmbedInfo {
+  label: string;
+  url: string;
+}
+
+/**
+ * Extracts Linear upload URLs from markdown content.
+ * Parses both image syntax ![label](url) and link syntax [label](url).
+ * Only returns URLs from uploads.linear.app domain.
+ */
+export function extractEmbeds(content: string): EmbedInfo[] {
+  if (!content) {
+    return [];
+  }
+
+  const embeds: EmbedInfo[] = [];
+
+  // Regex for markdown image syntax: ![label](url)
+  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+  // Regex for markdown link syntax: [label](url)
+  const linkRegex = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g;
+
+  // Extract from image syntax
+  let match;
+  while ((match = imageRegex.exec(content)) !== null) {
+    const label = match[1] || "file";
+    const url = match[2];
+
+    if (isLinearUploadUrl(url)) {
+      embeds.push({ label, url });
+    }
+  }
+
+  // Extract from link syntax
+  while ((match = linkRegex.exec(content)) !== null) {
+    const label = match[1] || "file";
+    const url = match[2];
+
+    if (isLinearUploadUrl(url)) {
+      embeds.push({ label, url });
+    }
+  }
+
+  return embeds;
+}
+
+/**
+ * Checks if a URL points to Linear's private cloud storage.
+ */
+export function isLinearUploadUrl(url: string): boolean {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname === "uploads.linear.app";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extracts the filename from a Linear upload URL.
+ * Used for default output filenames when downloading.
+ */
+export function extractFilenameFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    const parts = pathname.split("/");
+    return parts[parts.length - 1] || "download";
+  } catch {
+    return "download";
+  }
+}
