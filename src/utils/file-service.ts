@@ -60,12 +60,19 @@ export class FileService {
     }
 
     try {
-      // Make authenticated HTTP request
+      // Check if URL already has a signature (signed URL)
+      const urlObj = new URL(url);
+      const isSignedUrl = urlObj.searchParams.has("signature");
+
+      // Make HTTP request (with Bearer token only if not a signed URL)
+      const headers: Record<string, string> = {};
+      if (!isSignedUrl) {
+        headers.Authorization = `Bearer ${this.apiToken}`;
+      }
+
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${this.apiToken}`,
-        },
+        headers,
       });
 
       // Handle non-200 responses
