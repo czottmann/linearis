@@ -6,6 +6,7 @@
 export interface EmbedInfo {
   label: string;
   url: string;
+  expiresAt: string;
 }
 
 /**
@@ -26,6 +27,9 @@ export function extractEmbeds(content: string): EmbedInfo[] {
   // Regex for markdown link syntax: [label](url)
   const linkRegex = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g;
 
+  // Calculate expiration time (1 hour from now)
+  const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
+
   // Extract from image syntax
   let match;
   while ((match = imageRegex.exec(content)) !== null) {
@@ -33,7 +37,7 @@ export function extractEmbeds(content: string): EmbedInfo[] {
     const url = match[2];
 
     if (isLinearUploadUrl(url)) {
-      embeds.push({ label, url });
+      embeds.push({ label, url, expiresAt });
     }
   }
 
@@ -43,7 +47,7 @@ export function extractEmbeds(content: string): EmbedInfo[] {
     const url = match[2];
 
     if (isLinearUploadUrl(url)) {
-      embeds.push({ label, url });
+      embeds.push({ label, url, expiresAt });
     }
   }
 

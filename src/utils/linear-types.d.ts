@@ -6,6 +6,7 @@ export interface LinearIssue {
   embeds?: Array<{
     label: string;
     url: string;
+    expiresAt: string;
   }>;
   state: {
     id: string;
@@ -36,6 +37,7 @@ export interface LinearIssue {
     embeds?: Array<{
       label: string;
       url: string;
+      expiresAt: string;
     }>;
     user: {
       id: string;
