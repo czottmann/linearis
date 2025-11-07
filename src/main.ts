@@ -2,11 +2,11 @@
 
 /**
  * Linearis CLI - A command-line tool for Linear.app with structured JSON output
- * 
+ *
  * This tool provides optimized GraphQL operations for Linear API interactions,
  * smart ID resolution (UUID and TEAM-123 formats), and comprehensive
  * entity management capabilities.
- * 
+ *
  * Key features:
  * - Single-query GraphQL operations with batch resolving
  * - Human-friendly ID resolution (TEAM-123 → UUID)
@@ -26,7 +26,7 @@ import { outputUsageInfo } from "./utils/usage.js";
 program
   .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("2025.11.1")
+  .version("2025.11.2")
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
