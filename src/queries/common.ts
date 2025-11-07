@@ -1,7 +1,15 @@
 /**
  * Common GraphQL fragments for reuse across queries
+ * 
+ * These fragments define reusable field selections for Linear entities,
+ * ensuring consistent data structure and reducing duplication in query definitions.
+ * Each fragment focuses on specific entity relationships for optimal querying.
  */
 
+/**
+ * Core issue fields that are always needed
+ * Includes basic metadata and timestamps
+ */
 export const ISSUE_CORE_FIELDS = `
   id
   identifier
@@ -13,6 +21,10 @@ export const ISSUE_CORE_FIELDS = `
   updatedAt
 `;
 
+/**
+ * Issue workflow state relationship
+ * Provides current status information for the issue
+ */
 export const ISSUE_STATE_FRAGMENT = `
   state {
     id
@@ -20,6 +32,10 @@ export const ISSUE_STATE_FRAGMENT = `
   }
 `;
 
+/**
+ * Issue assignee relationship
+ * Provides user information for the assigned person
+ */
 export const ISSUE_ASSIGNEE_FRAGMENT = `
   assignee {
     id
@@ -27,6 +43,10 @@ export const ISSUE_ASSIGNEE_FRAGMENT = `
   }
 `;
 
+/**
+ * Issue team relationship
+ * Provides team information including key and name
+ */
 export const ISSUE_TEAM_FRAGMENT = `
   team {
     id
@@ -35,6 +55,10 @@ export const ISSUE_TEAM_FRAGMENT = `
   }
 `;
 
+/**
+ * Issue project relationship
+ * Provides project information for issue association
+ */
 export const ISSUE_PROJECT_FRAGMENT = `
   project {
     id
@@ -42,6 +66,10 @@ export const ISSUE_PROJECT_FRAGMENT = `
   }
 `;
 
+/**
+ * Issue labels relationship
+ * Provides all label nodes associated with the issue
+ */
 export const ISSUE_LABELS_FRAGMENT = `
   labels {
     nodes {
@@ -51,6 +79,10 @@ export const ISSUE_LABELS_FRAGMENT = `
   }
 `;
 
+/**
+ * Issue comments relationship
+ * Provides comment content and user information
+ */
 export const ISSUE_COMMENTS_FRAGMENT = `
   comments {
     nodes {
@@ -68,6 +100,10 @@ export const ISSUE_COMMENTS_FRAGMENT = `
 
 /**
  * Complete issue fragment with all relationships
+ * 
+ * Combines all issue fragments into a comprehensive field selection.
+ * This is used when full issue details are needed including all
+ * relationships (state, assignee, team, project, labels, comments).
  */
 export const COMPLETE_ISSUE_FRAGMENT = `
   ${ISSUE_CORE_FIELDS}

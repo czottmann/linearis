@@ -139,7 +139,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
       }
     }
 
-    # Resolve issue by identifier if needed
+    # Resolve issue identifier if provided
     issues(
       filter: {
         and: [
