@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [2025.11.2] - TODO-TO-DO
 
+### Added
+
+- `issues` commands now include parent and child issue relationships
+  - `parent` field with `{ id, identifier, title }` for parent issue (if exists)
+  - `children` array with `{ id, identifier, title }` for immediate child issues
+  - Available in all issue commands: `read`, `list`, and `search`
+
 ### Changed
 
 - Under-the-hood stability bug fixes.

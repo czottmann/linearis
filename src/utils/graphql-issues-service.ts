@@ -20,7 +20,10 @@ import type {
 } from "./linear-types.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
-import { parseIssueIdentifier, tryParseIssueIdentifier } from "./identifier-parser.js";
+import {
+  parseIssueIdentifier,
+  tryParseIssueIdentifier,
+} from "./identifier-parser.js";
 
 /**
  * GraphQL-optimized issues service for single API call operations
@@ -54,16 +57,16 @@ export class GraphQLIssuesService {
   /**
    * Get issue by ID with all relationships and comments in single query
    * Reduces from 7 API calls to 1 API call
-   * 
+   *
    * @param issueId - Either a UUID string or TEAM-123 format identifier
    * @returns Complete issue data with all relationships resolved
    * @throws Error if issue is not found
-   * 
+   *
    * @example
    * ```typescript
    * // Using UUID
    * const issue1 = await getIssueById("123e4567-e89b-12d3-a456-426614174000");
-   * 
+   *
    * // Using TEAM-123 format
    * const issue2 = await getIssueById("ABC-123");
    * ```
@@ -113,12 +116,12 @@ export class GraphQLIssuesService {
    * @param args Update arguments (supports label names and handles adding vs overwriting modes)
    * @param labelMode How to handle labels: 'adding' (merge with existing) or 'overwriting' (replace all)
    * @returns Updated issue with all relationships resolved
-   * 
+   *
    * @example
    * ```typescript
    * const updatedIssue = await updateIssue(
-   *   { 
-   *     id: "ABC-123", 
+   *   {
+   *     id: "ABC-123",
    *     title: "New Title",
    *     labels: ["Bug", "High Priority"]
    *   },
@@ -612,6 +615,18 @@ export class GraphQLIssuesService {
         id: label.id,
         name: label.name,
       })),
+      parent: issue.parent
+        ? {
+          id: issue.parent.id,
+          identifier: issue.parent.identifier,
+          title: issue.parent.title,
+        }
+        : undefined,
+      children: issue.children?.nodes.map((child: any) => ({
+        id: child.id,
+        identifier: child.identifier,
+        title: child.title,
+      })) || undefined,
       comments: issue.comments?.nodes.map((comment: any) => ({
         id: comment.id,
         body: comment.body,

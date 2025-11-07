@@ -1,6 +1,6 @@
 /**
  * Common GraphQL fragments for reuse across queries
- * 
+ *
  * These fragments define reusable field selections for Linear entities,
  * ensuring consistent data structure and reducing duplication in query definitions.
  * Each fragment focuses on specific entity relationships for optimal querying.
@@ -99,8 +99,34 @@ export const ISSUE_COMMENTS_FRAGMENT = `
 `;
 
 /**
+ * Issue parent relationship
+ * Provides basic information about the parent issue if this is a sub-issue
+ */
+export const ISSUE_PARENT_FRAGMENT = `
+  parent {
+    id
+    identifier
+    title
+  }
+`;
+
+/**
+ * Issue children relationship
+ * Provides basic information about immediate child issues
+ */
+export const ISSUE_CHILDREN_FRAGMENT = `
+  children {
+    nodes {
+      id
+      identifier
+      title
+    }
+  }
+`;
+
+/**
  * Complete issue fragment with all relationships
- * 
+ *
  * Combines all issue fragments into a comprehensive field selection.
  * This is used when full issue details are needed including all
  * relationships (state, assignee, team, project, labels, comments).
@@ -112,6 +138,8 @@ export const COMPLETE_ISSUE_FRAGMENT = `
   ${ISSUE_TEAM_FRAGMENT}
   ${ISSUE_PROJECT_FRAGMENT}
   ${ISSUE_LABELS_FRAGMENT}
+  ${ISSUE_PARENT_FRAGMENT}
+  ${ISSUE_CHILDREN_FRAGMENT}
 `;
 
 /**

@@ -1,7 +1,7 @@
 import { BATCH_RESOLVE_FOR_CREATE_QUERY, BATCH_RESOLVE_FOR_SEARCH_QUERY, BATCH_RESOLVE_FOR_UPDATE_QUERY, CREATE_ISSUE_MUTATION, FILTERED_SEARCH_ISSUES_QUERY, GET_ISSUE_BY_ID_QUERY, GET_ISSUE_BY_IDENTIFIER_QUERY, GET_ISSUES_QUERY, SEARCH_ISSUES_QUERY, UPDATE_ISSUE_MUTATION, } from "../queries/issues.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
-import { parseIssueIdentifier, tryParseIssueIdentifier } from "./identifier-parser.js";
+import { parseIssueIdentifier, tryParseIssueIdentifier, } from "./identifier-parser.js";
 export class GraphQLIssuesService {
     graphQLService;
     linearService;
@@ -383,6 +383,18 @@ export class GraphQLIssuesService {
                 id: label.id,
                 name: label.name,
             })),
+            parent: issue.parent
+                ? {
+                    id: issue.parent.id,
+                    identifier: issue.parent.identifier,
+                    title: issue.parent.title,
+                }
+                : undefined,
+            children: issue.children?.nodes.map((child) => ({
+                id: child.id,
+                identifier: child.identifier,
+                title: child.title,
+            })) || undefined,
             comments: issue.comments?.nodes.map((comment) => ({
                 id: comment.id,
                 body: comment.body,
