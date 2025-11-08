@@ -3,6 +3,11 @@ export interface LinearIssue {
   identifier: string;
   title: string;
   description?: string;
+  embeds?: Array<{
+    label: string;
+    url: string;
+    expiresAt: string;
+  }>;
   state: {
     id: string;
     name: string;
@@ -39,6 +44,11 @@ export interface LinearIssue {
   comments?: Array<{
     id: string;
     body: string;
+    embeds?: Array<{
+      label: string;
+      url: string;
+      expiresAt: string;
+    }>;
     user: {
       id: string;
       name: string;

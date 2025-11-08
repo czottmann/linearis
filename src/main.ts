@@ -2,6 +2,7 @@
 
 import { program } from "commander";
 import { setupCommentsCommands } from "./commands/comments.js";
+import { setupEmbedsCommands } from "./commands/embeds.js";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
@@ -13,7 +14,7 @@ import { outputUsageInfo } from "./utils/usage.js";
 program
   .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("1.1.0")
+  .version("2025.11.1")
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
@@ -28,6 +29,7 @@ setupLabelsCommands(program);
 setupProjectsCommands(program);
 setupCyclesCommands(program);
 setupProjectMilestonesCommands(program);
+setupEmbedsCommands(program);
 
 // Add usage command
 program.command("usage")

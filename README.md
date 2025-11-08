@@ -2,20 +2,13 @@
 
 # Linearis: An opinionated Linear CLI client
 
-CLI tool for [Linear.app](https://linear.app) with JSON output, smart ID
-resolution, and optimized GraphQL queries. Designed for LLM agents and humans
-who prefer structured data.
+CLI tool for [Linear.app](https://linear.app) with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.
 
 ## Why?
 
-There was no Linear CLI client I was happy with. Also I want my LLM agents to
-work with Linear, but the official Linear MCP (while working fine) eats up ~13k
-tokens (!!) just by being connected. In comparison, `linearis usage` tells the
-LLM everything it needs to know and comes in well under 1000 tokens.
+There was no Linear CLI client I was happy with. Also I want my LLM agents to work with Linear, but the official Linear MCP (while working fine) eats up ~13k tokens (!!) just by being connected. In comparison, `linearis usage` tells the LLM everything it needs to know and comes in well under 1000 tokens.
 
-**This project scratches my own itches,** and satisfies my own usage patterns of
-working with Linear: I **do** work with tickets/issues and comments on the
-command line; I **do not** manage projects or workspaces etc. there. YMMV.
+**This project scratches my own itches,** and satisfies my own usage patterns of working with Linear: I **do** work with tickets/issues and comments on the command line; I **do not** manage projects or workspaces etc. there. YMMV.
 
 ## Command Examples
 
@@ -60,6 +53,20 @@ linearis issues update ABC-123 --clear-labels
 ```bash
 # Add comment to issue
 linearis comments create ABC-123 --body "Fixed in PR #456"
+```
+
+### File Downloads
+
+```bash
+# Get issue details including embedded files
+linearis issues read ABC-123
+# Returns JSON with embeds array containing file URLs and expiration timestamps
+
+# Download a file from Linear storage
+linearis embeds download "https://uploads.linear.app/.../file.png?signature=..." --output ./screenshot.png
+
+# Overwrite existing file
+linearis embeds download "https://uploads.linear.app/.../file.png?signature=..." --output ./screenshot.png --overwrite
 ```
 
 ### Projects & Labels
@@ -140,8 +147,7 @@ linearis --api-token <token> issues list
 LINEAR_API_TOKEN=<token> linearis issues list
 ```
 
-… OR by storing it in `~/.linear_api_token` once, and then forgetting about it
-because the tool will check that file automatically:
+… OR by storing it in `~/.linear_api_token` once, and then forgetting about it because the tool will check that file automatically:
 
 ```bash
 # Save token once:
@@ -157,7 +163,6 @@ linearis issues list
 1. Go to _Settings_ → _Security & Access_ → _Personal API keys_
 1. Create a new API key
 
-
 ## Example rule for your LLM agent
 
 ```markdown
@@ -168,46 +173,32 @@ The ticket numbers follow the format "ABC-<number>". Always reference tickets by
 If you create a ticket, and it's not clear which project to assign it to, prompt the user. When creating subtasks, use the project of the parent ticket by default.
 
 When the the status of a task in the ticket description has changed (task → task done), update the description accordingly. When updating a ticket with a progress report that is more than just a checkbox change, add that report as a ticket comment.
-```
 
+The `issues read` command returns an `embeds` array containing files uploaded to Linear (screenshots, documents, etc.) with signed download URLs and expiration timestamps. Use `embeds download` to download these files when needed.
+```
 
 ## Author
 
-Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev,
-https://github.com/czottmann.
+Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev, https://github.com/czottmann.
 
-This project is neither affiliated with nor endorsed by Linear. I'm just a very
-happy customer.
+This project is neither affiliated with nor endorsed by Linear. I'm just a very happy customer.
 
 > [!TIP]
-> I make Shortcuts-related macOS & iOS productivity apps like
-> [Actions For Obsidian](https://actions.work/actions-for-obsidian),
-> [Browser Actions](https://actions.work/browser-actions) (which adds Shortcuts
-> support for several major browsers), and
-> [BarCuts](https://actions.work/barcuts) (a surprisingly useful contextual
-> Shortcuts launcher). Check them out!
+> I make Shortcuts-related macOS & iOS productivity apps like [Actions For Obsidian](https://actions.work/actions-for-obsidian), [Browser Actions](https://actions.work/browser-actions) (which adds Shortcuts support for several major browsers), and [BarCuts](https://actions.work/barcuts) (a surprisingly useful contextual Shortcuts launcher). Check them out!
 
 ## Documentation
 
-- **[docs/project-overview.md](docs/project-overview.md)** - Project purpose,
-  technology stack, and platform support
-- **[docs/architecture.md](docs/architecture.md)** - Component organization,
-  data flow, and performance patterns
-- **[docs/build-system.md](docs/build-system.md)** - TypeScript compilation,
-  automated builds
-- **[docs/testing.md](docs/testing.md)** - Testing approach, manual validation,
-  and performance benchmarks
-- **[docs/development.md](docs/development.md)** - Code patterns, TypeScript
-  standards, and common workflows
-- **[docs/deployment.md](docs/deployment.md)** - Git-based npm install,
-  automated compilation, and production deployment
-- **[docs/files.md](docs/files.md)** - Complete file catalog with descriptions
-  and relationships
+- **[docs/project-overview.md](docs/project-overview.md)** - Project purpose, technology stack, and platform support
+- **[docs/architecture.md](docs/architecture.md)** - Component organization, data flow, and performance patterns
+- **[docs/build-system.md](docs/build-system.md)** - TypeScript compilation, automated builds
+- **[docs/testing.md](docs/testing.md)** - Testing approach, manual validation, and performance benchmarks
+- **[docs/development.md](docs/development.md)** - Code patterns, TypeScript standards, and common workflows
+- **[docs/deployment.md](docs/deployment.md)** - Git-based npm install, automated compilation, and production deployment
+- **[docs/files.md](docs/files.md)** - Complete file catalog with descriptions and relationships
 
 ## Key Entry Points
 
 - **dist/main.js** - Compiled CLI entry point for production use
 - **src/main.ts** - TypeScript source with Commander.js setup (development)
-- **package.json** - Project configuration with automated build scripts and npm
-  distribution
+- **package.json** - Project configuration with automated build scripts and npm distribution
 - **tsconfig.json** - TypeScript compilation targeting ES2023 with dist/ output

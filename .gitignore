@@ -30,3 +30,6 @@ test-pr4.sh
 
 # Test coverage
 coverage/
+
+# Temp files etc.
+tmp/
