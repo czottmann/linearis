@@ -1,6 +1,7 @@
 import { LinearClient } from "@linear/sdk";
 import { getApiToken } from "./auth.js";
 import { isUuid } from "./uuid.js";
+const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 function resolveId(input) {
     if (isUuid(input)) {
         return input;
@@ -233,7 +234,7 @@ export class LinearService {
         const cyclesConnection = await this.client.cycles({
             filter: Object.keys(filter).length > 0 ? filter : undefined,
             orderBy: "createdAt",
-            first: 250,
+            first: DEFAULT_CYCLE_PAGINATION_LIMIT,
         });
         const cyclesWithData = await Promise.all(cyclesConnection.nodes.map(async (cycle) => {
             const team = await cycle.team;

@@ -9,6 +9,9 @@ import {
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
 
+// Default pagination limit for Linear SDK queries to avoid complexity errors
+const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
+
 /**
  * Generic ID resolver that handles UUID validation and passthrough
  */
@@ -352,7 +355,7 @@ export class LinearService {
     const cyclesConnection = await this.client.cycles({
       filter: Object.keys(filter).length > 0 ? filter : undefined,
       orderBy: "createdAt" as any,
-      first: 250,
+      first: DEFAULT_CYCLE_PAGINATION_LIMIT,
     });
 
     // Fetch all relationships in parallel for all cycles

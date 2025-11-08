@@ -11,6 +11,77 @@ import {
 } from "../queries/projectMilestones.js";
 import { isUuid } from "../utils/uuid.js";
 
+// Helper function to resolve project ID from name
+async function resolveProjectId(projectNameOrId: string, graphQLService: any): Promise<string> {
+  if (isUuid(projectNameOrId)) {
+    return projectNameOrId;
+  }
+
+  const projectRes = await graphQLService.rawRequest(
+    `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
+    { name: projectNameOrId },
+  );
+
+  const projects = projectRes.projects?.nodes || [];
+  if (!projects.length) {
+    throw new Error(`Project "${projectNameOrId}" not found`);
+  }
+
+  return projects[0].id;
+}
+
+// Helper function to resolve milestone ID from name
+async function resolveMilestoneId(
+  milestoneNameOrId: string,
+  graphQLService: any,
+  projectNameOrId?: string
+): Promise<string> {
+  if (isUuid(milestoneNameOrId)) {
+    return milestoneNameOrId;
+  }
+
+  let nodes: any[] = [];
+
+  if (projectNameOrId) {
+    // Resolve project ID first
+    const projectId = await resolveProjectId(projectNameOrId, graphQLService);
+
+    // Scoped lookup
+    const findRes = await graphQLService.rawRequest(
+      FIND_PROJECT_MILESTONE_BY_NAME_SCOPED,
+      {
+        name: milestoneNameOrId,
+        projectId,
+      },
+    );
+    nodes = findRes.project?.projectMilestones?.nodes || [];
+  }
+
+  // Fall back to global search if no project scope or not found
+  if (nodes.length === 0) {
+    const globalRes = await graphQLService.rawRequest(
+      FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL,
+      { name: milestoneNameOrId },
+    );
+    nodes = globalRes.projectMilestones?.nodes || [];
+  }
+
+  if (nodes.length === 0) {
+    throw new Error(`Milestone "${milestoneNameOrId}" not found`);
+  }
+
+  if (nodes.length > 1) {
+    const projectNames = nodes
+      .map((m: any) => `"${m.name}" in project "${m.project?.name}"`)
+      .join(", ");
+    throw new Error(
+      `Multiple milestones found with name "${milestoneNameOrId}": ${projectNames}. Please specify --project or use the milestone ID`,
+    );
+  }
+
+  return nodes[0].id;
+}
+
 export function setupProjectMilestonesCommands(program: Command): void {
   const projectMilestones = program
     .command("project-milestones")
@@ -31,18 +102,7 @@ export function setupProjectMilestonesCommands(program: Command): void {
         );
 
         // Resolve project ID if needed
-        let projectId = options.project;
-        if (!isUuid(options.project)) {
-          const projectRes = await graphQLService.rawRequest(
-            `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
-            { name: options.project },
-          );
-          const projects = projectRes.projects?.nodes || [];
-          if (!projects.length) {
-            throw new Error(`Project "${options.project}" not found`);
-          }
-          projectId = projects[0].id;
-        }
+        const projectId = await resolveProjectId(options.project, graphQLService);
 
         const result = await graphQLService.rawRequest(
           LIST_PROJECT_MILESTONES_QUERY,
@@ -71,73 +131,11 @@ export function setupProjectMilestonesCommands(program: Command): void {
             command.parent!.parent!.opts(),
           );
 
-          let milestoneId = milestoneIdOrName;
-
-          if (!isUuid(milestoneIdOrName)) {
-            // Resolve by name; prefer scoped project lookup when --project is supplied
-            let nodes: any[] = [];
-
-            if (options.project) {
-              // Resolve project ID first
-              let projectId = options.project;
-              if (!isUuid(options.project)) {
-                const projectRes = await graphQLService.rawRequest(
-                  `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
-                  { name: options.project },
-                );
-                const projects = projectRes.projects?.nodes || [];
-                if (!projects.length) {
-                  throw new Error(`Project "${options.project}" not found`);
-                }
-                projectId = projects[0].id;
-              }
-
-              // Scoped lookup
-              const findRes = await graphQLService.rawRequest(
-                FIND_PROJECT_MILESTONE_BY_NAME_SCOPED,
-                {
-                  name: milestoneIdOrName,
-                  projectId,
-                },
-              );
-              nodes = findRes.project?.projectMilestones?.nodes || [];
-            }
-
-            // If scoped lookup didn't find anything (or no project provided), try global
-            if (!nodes.length) {
-              const findRes = await graphQLService.rawRequest(
-                FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL,
-                { name: milestoneIdOrName },
-              );
-              nodes = findRes.projectMilestones?.nodes || [];
-            }
-
-            if (!nodes.length) {
-              throw new Error(
-                `Milestone with name "${milestoneIdOrName}" not found`,
-              );
-            }
-
-            // Disambiguate: if only one match, use it; otherwise error
-            let chosen: any | undefined;
-            if (nodes.length === 1) {
-              chosen = nodes[0];
-            }
-
-            if (!chosen) {
-              const list = nodes
-                .map(
-                  (n: any) =>
-                    `${n.id} (${n.project?.name || "?"} / ${n.targetDate || "no date"})`,
-                )
-                .join("; ");
-              throw new Error(
-                `Ambiguous milestone name "${milestoneIdOrName}" — multiple matches found: ${list}. Please use an ID or scope with --project.`,
-              );
-            }
-
-            milestoneId = chosen.id;
-          }
+          const milestoneId = await resolveMilestoneId(
+            milestoneIdOrName,
+            graphQLService,
+            options.project
+          );
 
           const result = await graphQLService.rawRequest(
             GET_PROJECT_MILESTONE_BY_ID_QUERY,
@@ -167,18 +165,7 @@ export function setupProjectMilestonesCommands(program: Command): void {
           );
 
           // Resolve project ID if needed
-          let projectId = options.project;
-          if (!isUuid(options.project)) {
-            const projectRes = await graphQLService.rawRequest(
-              `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
-              { name: options.project },
-            );
-            const projects = projectRes.projects?.nodes || [];
-            if (!projects.length) {
-              throw new Error(`Project "${options.project}" not found`);
-            }
-            projectId = projects[0].id;
-          }
+          const projectId = await resolveProjectId(options.project, graphQLService);
 
           const result = await graphQLService.rawRequest(
             CREATE_PROJECT_MILESTONE_MUTATION,
@@ -217,73 +204,11 @@ export function setupProjectMilestonesCommands(program: Command): void {
             command.parent!.parent!.opts(),
           );
 
-          let milestoneId = milestoneIdOrName;
-
-          // Resolve milestone ID if not a UUID
-          if (!isUuid(milestoneIdOrName)) {
-            let nodes: any[] = [];
-
-            if (options.project) {
-              // Resolve project ID first
-              let projectId = options.project;
-              if (!isUuid(options.project)) {
-                const projectRes = await graphQLService.rawRequest(
-                  `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
-                  { name: options.project },
-                );
-                const projects = projectRes.projects?.nodes || [];
-                if (!projects.length) {
-                  throw new Error(`Project "${options.project}" not found`);
-                }
-                projectId = projects[0].id;
-              }
-
-              // Scoped lookup
-              const findRes = await graphQLService.rawRequest(
-                FIND_PROJECT_MILESTONE_BY_NAME_SCOPED,
-                {
-                  name: milestoneIdOrName,
-                  projectId,
-                },
-              );
-              nodes = findRes.project?.projectMilestones?.nodes || [];
-            }
-
-            // If scoped lookup didn't find anything (or no project provided), try global
-            if (!nodes.length) {
-              const findRes = await graphQLService.rawRequest(
-                FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL,
-                { name: milestoneIdOrName },
-              );
-              nodes = findRes.projectMilestones?.nodes || [];
-            }
-
-            if (!nodes.length) {
-              throw new Error(
-                `Milestone with name "${milestoneIdOrName}" not found`,
-              );
-            }
-
-            // Disambiguate: if only one match, use it; otherwise error
-            let chosen: any | undefined;
-            if (nodes.length === 1) {
-              chosen = nodes[0];
-            }
-
-            if (!chosen) {
-              const list = nodes
-                .map(
-                  (n: any) =>
-                    `${n.id} (${n.project?.name || "?"} / ${n.targetDate || "no date"})`,
-                )
-                .join("; ");
-              throw new Error(
-                `Ambiguous milestone name "${milestoneIdOrName}" — multiple matches found: ${list}. Please use an ID or scope with --project.`,
-              );
-            }
-
-            milestoneId = chosen.id;
-          }
+          const milestoneId = await resolveMilestoneId(
+            milestoneIdOrName,
+            graphQLService,
+            options.project
+          );
 
           // Build update input (only include provided fields)
           const updateVars: any = { id: milestoneId };

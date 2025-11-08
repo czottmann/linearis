@@ -330,10 +330,11 @@ export class GraphQLIssuesService {
       updateInput.assigneeId = args.assigneeId;
     }
     if (finalProjectId !== undefined) updateInput.projectId = finalProjectId;
-  if (finalCycleId !== undefined) updateInput.cycleId = finalCycleId;
+    if (finalCycleId !== undefined) updateInput.cycleId = finalCycleId;
     if (args.estimate !== undefined) updateInput.estimate = args.estimate;
     if (args.parentId !== undefined) updateInput.parentId = args.parentId;
-    if (finalMilestoneId !== undefined) updateInput.projectMilestoneId = finalMilestoneId;    if (finalLabelIds !== undefined) {
+    if (finalMilestoneId !== undefined) updateInput.projectMilestoneId = finalMilestoneId;
+    if (finalLabelIds !== undefined) {
       updateInput.labelIds = finalLabelIds;
     }
 
