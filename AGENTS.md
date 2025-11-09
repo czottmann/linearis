@@ -61,7 +61,7 @@ The codebase uses a dual-service pattern optimized for performance:
 
 - GraphQL query strings using fragments for reusability
 - `common.ts` contains shared fragments (COMPLETE_ISSUE_FRAGMENT, etc.)
-- Query files organized by entity (issues.ts, cycles.ts, projectMilestones.ts)
+- Query files organized by entity (issues.ts, cycles.ts, project-milestones.ts)
 
 **Type System** (`src/utils/linear-types.d.ts`)
 

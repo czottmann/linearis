@@ -21,7 +21,7 @@ import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
 import { setupCyclesCommands } from "./commands/cycles.js";
-import { setupProjectMilestonesCommands } from "./commands/projectMilestones.js";
+import { setupProjectMilestonesCommands } from "./commands/project-milestones.js";
 import { outputUsageInfo } from "./utils/usage.js";
 
 // Setup main program

@@ -43,12 +43,14 @@ The codebase uses a dual-service pattern optimized for performance:
 ### Core Components
 
 **Command Layer** (`src/commands/`)
+
 - Each command file exports a `setup*Commands(program)` function
 - Commands registered in `src/main.ts` with Commander.js
 - All commands use `handleAsyncCommand()` wrapper for consistent error handling
 - Current commands: issues, comments, labels, projects, cycles, projectMilestones
 
 **Service Layer** (`src/utils/`)
+
 - `graphql-service.ts` - Raw GraphQL execution and batch operations
 - `graphql-issues-service.ts` - Optimized single-query issue operations
 - `linear-service.ts` - Smart ID resolution and SDK fallback operations
@@ -56,17 +58,20 @@ The codebase uses a dual-service pattern optimized for performance:
 - `output.ts` - JSON formatting and error handling
 
 **Query Definitions** (`src/queries/`)
+
 - GraphQL query strings using fragments for reusability
 - `common.ts` contains shared fragments (COMPLETE_ISSUE_FRAGMENT, etc.)
-- Query files organized by entity (issues.ts, cycles.ts, projectMilestones.ts)
+- Query files organized by entity (issues.ts, cycles.ts, project-milestones.ts)
 
 **Type System** (`src/utils/linear-types.d.ts`)
+
 - TypeScript interfaces for all Linear entities
 - Ensures type safety across service layers
 
 ### Authentication Flow
 
 Three authentication methods (checked in order):
+
 1. `--api-token` command flag
 2. `LINEAR_API_TOKEN` environment variable
 3. Plain text file at `$HOME/.linear_api_token`
@@ -90,6 +95,7 @@ All resolution happens in `LinearService` via `resolve*Id()` methods.
 **Solution:** Custom GraphQL queries with fragments fetch everything in one request.
 
 Example - listing issues:
+
 - SDK approach: 1 query for issues + 5 queries per issue (team, assignee, state, project, labels) = 1 + (5 × N) queries
 - GraphQL approach: 1 query with all relationships embedded = 1 query total
 
@@ -136,6 +142,7 @@ See `src/queries/common.ts` for fragment definitions and `src/utils/graphql-issu
 ## Documentation
 
 Comprehensive docs in `docs/`:
+
 - `architecture.md` - Component organization, data flow, optimization patterns
 - `development.md` - Code patterns, TypeScript standards, common workflows
 - `build-system.md` - TypeScript compilation, automated builds
