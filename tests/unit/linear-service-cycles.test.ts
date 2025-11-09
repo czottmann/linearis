@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LinearService } from "../../src/utils/linear-service.js";
 
 /**
@@ -198,7 +198,8 @@ describe("LinearService - Cycle Methods", () => {
         assignee: Promise.resolve({ id: "user-1", name: "John Doe" }),
         team: Promise.resolve(mockTeam),
         project: Promise.resolve({ id: "proj-1", name: "Project 1" }),
-        labels: () => Promise.resolve({ nodes: [{ id: "label-1", name: "bug" }] }),
+        labels: () =>
+          Promise.resolve({ nodes: [{ id: "label-1", name: "bug" }] }),
         createdAt: new Date("2025-01-01"),
         updatedAt: new Date("2025-01-02"),
       };
@@ -335,7 +336,7 @@ describe("LinearService - Cycle Methods", () => {
       mockClient.cycles.mockResolvedValue({ nodes: [] });
 
       await expect(service.resolveCycleId("NonExistent")).rejects.toThrow(
-        'Cycle "NonExistent" not found'
+        'Cycle "NonExistent" not found',
       );
     });
 
@@ -343,9 +344,10 @@ describe("LinearService - Cycle Methods", () => {
       vi.spyOn(service, "resolveTeamId").mockResolvedValue("team-1");
       mockClient.cycles.mockResolvedValue({ nodes: [] });
 
-      await expect(service.resolveCycleId("NonExistent", "ENG")).rejects.toThrow(
-        'Cycle "NonExistent" for team ENG not found'
-      );
+      await expect(service.resolveCycleId("NonExistent", "ENG")).rejects
+        .toThrow(
+          'Cycle "NonExistent" for team ENG not found',
+        );
     });
 
     it("should disambiguate by preferring active cycle", async () => {
@@ -358,7 +360,11 @@ describe("LinearService - Cycle Methods", () => {
           isActive: false,
           isNext: false,
           isPrevious: true,
-          team: Promise.resolve({ id: "team-1", key: "ENG", name: "Engineering" }),
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
         },
         {
           id: "cycle-2",
@@ -368,7 +374,11 @@ describe("LinearService - Cycle Methods", () => {
           isActive: true,
           isNext: false,
           isPrevious: false,
-          team: Promise.resolve({ id: "team-1", key: "ENG", name: "Engineering" }),
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
         },
       ];
 
@@ -389,7 +399,11 @@ describe("LinearService - Cycle Methods", () => {
           isActive: false,
           isNext: false,
           isPrevious: true,
-          team: Promise.resolve({ id: "team-1", key: "ENG", name: "Engineering" }),
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
         },
         {
           id: "cycle-2",
@@ -399,7 +413,11 @@ describe("LinearService - Cycle Methods", () => {
           isActive: false,
           isNext: true,
           isPrevious: false,
-          team: Promise.resolve({ id: "team-1", key: "ENG", name: "Engineering" }),
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
         },
       ];
 
@@ -420,7 +438,11 @@ describe("LinearService - Cycle Methods", () => {
           isActive: false,
           isNext: false,
           isPrevious: false,
-          team: Promise.resolve({ id: "team-1", key: "ENG", name: "Engineering" }),
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
         },
         {
           id: "cycle-2",
@@ -437,8 +459,89 @@ describe("LinearService - Cycle Methods", () => {
       mockClient.cycles.mockResolvedValue({ nodes: mockCycles });
 
       await expect(service.resolveCycleId("Sprint 1")).rejects.toThrow(
-        /Ambiguous cycle name "Sprint 1"/
+        /Ambiguous cycle name "Sprint 1"/,
       );
+    });
+  });
+
+  describe("resolveCycleId - error cases", () => {
+    it("should throw when cycle not found", async () => {
+      mockClient.cycles.mockResolvedValue({
+        nodes: [],
+      });
+
+      await expect(service.resolveCycleId("Nonexistent Cycle")).rejects.toThrow(
+        'Cycle "Nonexistent Cycle" not found',
+      );
+    });
+
+    it("should throw when multiple cycles match and none are active/next/previous", async () => {
+      const mockCycles = [
+        {
+          id: "cycle-1",
+          name: "Sprint 1",
+          number: 1,
+          startsAt: "2025-01-01",
+          isActive: false,
+          isNext: false,
+          isPrevious: false,
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
+        },
+        {
+          id: "cycle-2",
+          name: "Sprint 1",
+          number: 2,
+          startsAt: "2025-02-01",
+          isActive: false,
+          isNext: false,
+          isPrevious: false,
+          team: Promise.resolve({ id: "team-2", key: "PROD", name: "Product" }),
+        },
+      ];
+
+      mockClient.cycles.mockResolvedValue({ nodes: mockCycles });
+
+      await expect(service.resolveCycleId("Sprint 1")).rejects.toThrow(
+        /Ambiguous cycle name.*multiple matches found/,
+      );
+    });
+
+    it("should prefer active cycle when multiple matches exist", async () => {
+      const mockCycles = [
+        {
+          id: "cycle-inactive",
+          name: "Sprint 1",
+          number: 1,
+          startsAt: "2025-01-01",
+          isActive: false,
+          isNext: false,
+          isPrevious: false,
+          team: Promise.resolve({
+            id: "team-1",
+            key: "ENG",
+            name: "Engineering",
+          }),
+        },
+        {
+          id: "cycle-active",
+          name: "Sprint 1",
+          number: 2,
+          startsAt: "2025-02-01",
+          isActive: true,
+          isNext: false,
+          isPrevious: false,
+          team: Promise.resolve({ id: "team-2", key: "PROD", name: "Product" }),
+        },
+      ];
+
+      mockClient.cycles.mockResolvedValue({ nodes: mockCycles });
+
+      const result = await service.resolveCycleId("Sprint 1");
+      expect(result).toBe("cycle-active");
     });
   });
 });
