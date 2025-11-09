@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -25,7 +25,7 @@ describe("Cycles CLI Commands", () => {
     if (!hasApiToken) {
       console.warn(
         "\n⚠️  LINEAR_API_TOKEN not set - skipping integration tests\n" +
-          "   To run these tests, set LINEAR_API_TOKEN in your environment\n"
+          "   To run these tests, set LINEAR_API_TOKEN in your environment\n",
       );
     }
   });
@@ -43,7 +43,9 @@ describe("Cycles CLI Commands", () => {
 
   describe("cycles list", () => {
     it.skipIf(!hasApiToken)("should list cycles without error", async () => {
-      const { stdout, stderr } = await execAsync(`node ${CLI_PATH} cycles list`);
+      const { stdout, stderr } = await execAsync(
+        `node ${CLI_PATH} cycles list`,
+      );
 
       // Should not have complexity errors
       expect(stderr).not.toContain("query too complex");
@@ -78,7 +80,9 @@ describe("Cycles CLI Commands", () => {
 
     it.skipIf(!hasApiToken)("should filter by active cycles", async () => {
       // First, get a team key
-      const { stdout: listOutput } = await execAsync(`node ${CLI_PATH} cycles list`);
+      const { stdout: listOutput } = await execAsync(
+        `node ${CLI_PATH} cycles list`,
+      );
       const allCycles = JSON.parse(listOutput);
 
       if (allCycles.length > 0 && allCycles[0].team) {
@@ -86,7 +90,7 @@ describe("Cycles CLI Commands", () => {
 
         // Now test active filter
         const { stdout } = await execAsync(
-          `node ${CLI_PATH} cycles list --active --team ${teamKey}`
+          `node ${CLI_PATH} cycles list --active --team ${teamKey}`,
         );
         const activeCycles = JSON.parse(stdout);
 
@@ -101,7 +105,9 @@ describe("Cycles CLI Commands", () => {
       "should work with --around-active flag",
       async () => {
         // First, get a team key
-        const { stdout: listOutput } = await execAsync(`node ${CLI_PATH} cycles list`);
+        const { stdout: listOutput } = await execAsync(
+          `node ${CLI_PATH} cycles list`,
+        );
         const allCycles = JSON.parse(listOutput);
 
         if (allCycles.length > 0 && allCycles[0].team) {
@@ -110,7 +116,7 @@ describe("Cycles CLI Commands", () => {
           // Test around-active (may fail if no active cycle, which is ok)
           try {
             const { stdout, stderr } = await execAsync(
-              `node ${CLI_PATH} cycles list --around-active 3 --team ${teamKey}`
+              `node ${CLI_PATH} cycles list --around-active 3 --team ${teamKey}`,
             );
 
             // Should not have complexity errors
@@ -126,7 +132,7 @@ describe("Cycles CLI Commands", () => {
           }
         }
       },
-      { timeout: 30000 }
+      { timeout: 30000 },
     );
 
     it("should require --team when using --around-active", async () => {
@@ -142,14 +148,16 @@ describe("Cycles CLI Commands", () => {
   describe("cycles read", () => {
     it.skipIf(!hasApiToken)("should read cycle by ID", async () => {
       // First get a cycle ID
-      const { stdout: listOutput } = await execAsync(`node ${CLI_PATH} cycles list`);
+      const { stdout: listOutput } = await execAsync(
+        `node ${CLI_PATH} cycles list`,
+      );
       const cycles = JSON.parse(listOutput);
 
       if (cycles.length > 0) {
         const cycleId = cycles[0].id;
 
         const { stdout, stderr } = await execAsync(
-          `node ${CLI_PATH} cycles read ${cycleId}`
+          `node ${CLI_PATH} cycles read ${cycleId}`,
         );
 
         // Should not have complexity errors
@@ -168,7 +176,9 @@ describe("Cycles CLI Commands", () => {
 
     it.skipIf(!hasApiToken)("should read cycle by name with team", async () => {
       // First get a cycle name and team
-      const { stdout: listOutput } = await execAsync(`node ${CLI_PATH} cycles list`);
+      const { stdout: listOutput } = await execAsync(
+        `node ${CLI_PATH} cycles list`,
+      );
       const cycles = JSON.parse(listOutput);
 
       // Find a cycle that has a name
@@ -179,7 +189,7 @@ describe("Cycles CLI Commands", () => {
         const teamKey = cycleWithName.team.key;
 
         const { stdout, stderr } = await execAsync(
-          `node ${CLI_PATH} cycles read "${cycleName}" --team ${teamKey}`
+          `node ${CLI_PATH} cycles read "${cycleName}" --team ${teamKey}`,
         );
 
         // Should not have complexity errors
@@ -191,6 +201,36 @@ describe("Cycles CLI Commands", () => {
         // Skip if no cycles have names - this is ok
         console.log("Skipping: No cycles with names found in workspace");
       }
+    });
+  });
+
+  describe("Cycles CLI - Error Cases", () => {
+    it("should reject --around-active without --team", async () => {
+      if (!hasApiToken) return;
+
+      await expect(
+        execAsync(`node ${CLI_PATH} cycles list --around-active 3`),
+      ).rejects.toThrow(/--around-active requires --team/);
+    });
+
+    it("should reject --around-active with non-numeric value", async () => {
+      if (!hasApiToken) return;
+
+      await expect(
+        execAsync(
+          `node ${CLI_PATH} cycles list --around-active abc --team Engineering`,
+        ),
+      ).rejects.toThrow(/--around-active requires a non-negative integer/);
+    });
+
+    it("should reject --around-active with negative value", async () => {
+      if (!hasApiToken) return;
+
+      await expect(
+        execAsync(
+          `node ${CLI_PATH} cycles list --around-active -5 --team Engineering`,
+        ),
+      ).rejects.toThrow(/--around-active requires a non-negative integer/);
     });
   });
 });
