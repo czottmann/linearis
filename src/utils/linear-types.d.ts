@@ -165,13 +165,14 @@ export interface LinearProjectMilestone {
   name: string;
   description?: string;
   targetDate?: string;
-  sortOrder: number;
-  project: {
+  sortOrder?: number;
+  createdAt: string;
+  updatedAt: string;
+  project?: {
     id: string;
     name: string;
   };
-  createdAt: string;
-  updatedAt: string;
+  issues?: LinearIssue[];
 }
 
 export interface LinearProjectMilestoneWithIssues
@@ -234,4 +235,28 @@ export interface CycleListOptions {
 export interface CycleReadOptions {
   team?: string;
   issuesFirst?: string;
+}
+
+export interface MilestoneListOptions {
+  project: string;
+  limit?: string;
+}
+
+export interface MilestoneReadOptions {
+  project?: string;
+  issuesFirst?: string;
+}
+
+export interface MilestoneCreateOptions {
+  project: string;
+  description?: string;
+  targetDate?: string;
+}
+
+export interface MilestoneUpdateOptions {
+  project?: string;
+  name?: string;
+  description?: string;
+  targetDate?: string;
+  sortOrder?: string;
 }
