@@ -1,18 +1,35 @@
 /**
  * Utility functions for extracting embedded file URLs from markdown content.
  * Focuses on Linear's private cloud storage URLs (uploads.linear.app).
+ * 
+ * This parser handles both image and link markdown syntax, filtering for
+ * Linear-specific URLs and calculating expiration times for signed URLs.
  */
 
 export interface EmbedInfo {
+  /** The alt text or link label from markdown */
   label: string;
+  /** The direct URL to the Linear uploaded file */
   url: string;
+  /** ISO timestamp when the signed URL expires (1 hour from generation) */
   expiresAt: string;
 }
 
 /**
  * Extracts Linear upload URLs from markdown content.
- * Parses both image syntax ![label](url) and link syntax [label](url).
- * Only returns URLs from uploads.linear.app domain.
+ * 
+ * Parses both image syntax `![label](url)` and link syntax `[label](url)`.
+ * Only returns URLs from uploads.linear.app domain with calculated expiration times.
+ * 
+ * @param content - Markdown content to parse for embedded files
+ * @returns Array of embed information for Linear upload URLs
+ * 
+ * @example
+ * ```typescript
+ * const content = "Check this screenshot ![test](https://uploads.linear.app/abc/file.png)";
+ * const embeds = extractEmbeds(content);
+ * // Returns: [{ label: "test", url: "...", expiresAt: "2025-11-07T12:00:00.000Z" }]
+ * ```
  */
 export function extractEmbeds(content: string): EmbedInfo[] {
   if (!content) {

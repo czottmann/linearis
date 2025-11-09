@@ -3,12 +3,26 @@ import { CommandOptions, getApiToken } from "./auth.js";
 
 /**
  * GraphQL service wrapper around LinearGraphQLClient
- * Provides optimized direct GraphQL queries with error handling matching LinearService
+ * 
+ * Provides optimized direct GraphQL queries with error handling matching LinearService.
+ * This service enables single-query operations with batch resolving to eliminate
+ * the N+1 query problem common with the Linear SDK.
+ * 
+ * Features:
+ * - Direct GraphQL query execution
+ * - 1-hour signed URL generation for file downloads
+ * - Consistent error handling patterns
+ * - Batch query capabilities
  */
 export class GraphQLService {
   private graphQLClient: any;
   private client: LinearClient;
 
+  /**
+   * Initialize GraphQL service with authentication
+   * 
+   * @param apiToken - Linear API token for authentication
+   */
   constructor(apiToken: string) {
     this.client = new LinearClient({
       apiKey: apiToken,
@@ -21,6 +35,19 @@ export class GraphQLService {
 
   /**
    * Execute a raw GraphQL query with error handling
+   * 
+   * @param query - GraphQL query string
+   * @param variables - Optional query variables
+   * @returns Query response data
+   * @throws Error with descriptive message for GraphQL errors
+   * 
+   * @example
+   * ```typescript
+   * const result = await graphqlService.rawRequest(
+   *   GET_ISSUES_QUERY,
+   *   { first: 10 }
+   * );
+   * ```
    */
   async rawRequest<T = any>(query: string, variables?: any): Promise<T> {
     try {

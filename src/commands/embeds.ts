@@ -5,7 +5,19 @@ import { FileService } from "../utils/file-service.js";
 
 /**
  * Setup embeds commands on the program
- * @param program - Commander.js program instance
+ * 
+ * Registers `embeds` command group for downloading embedded files
+ * from Linear's private cloud storage. Handles file download operations
+ * with authentication and error reporting.
+ * 
+ * @param program - Commander.js program instance to register commands on
+ * 
+ * @example
+ * ```typescript
+ * // In main.ts
+ * setupEmbedsCommands(program);
+ * // Enables: linearis embeds download <url> [--output path] [--overwrite]
+ * ```
  */
 export function setupEmbedsCommands(program: Command): void {
   const embeds = program
@@ -17,6 +29,15 @@ export function setupEmbedsCommands(program: Command): void {
     embeds.help();
   });
 
+  /**
+   * Download file from Linear storage
+   * 
+   * Command: `linearis embeds download <url> [--output <path>] [--overwrite]`
+   * 
+   * Downloads files from Linear's private cloud storage with automatic
+   * authentication handling. Supports signed URLs and creates directories
+   * as needed.
+   */
   embeds
     .command("download <url>")
     .description("Download a file from Linear storage.")
@@ -25,10 +46,10 @@ export function setupEmbedsCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (url: string, options: any, command: Command) => {
-          // Get API token from parent command options
+          // Get API token from parent command options for authentication
           const apiToken = await getApiToken(command.parent!.parent!.opts());
 
-          // Create file service and download
+          // Create file service and initiate download
           const fileService = new FileService(apiToken);
           const result = await fileService.downloadFile(url, {
             output: options.output,
@@ -36,13 +57,14 @@ export function setupEmbedsCommands(program: Command): void {
           });
 
           if (result.success) {
+            // Successful download with file path
             outputSuccess({
               success: true,
               filePath: result.filePath,
               message: `File downloaded successfully to ${result.filePath}`,
             });
           } else {
-            // Include status code for debugging auth issues
+            // Include status code for debugging authentication issues
             const error: any = {
               success: false,
               error: result.error,

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025.11.2] - TODO-TO-DO
+
+### Added
+
+- `issues` commands now include parent and child issue relationships
+  - `parent` field with `{ id, identifier, title }` for parent issue (if exists)
+  - `children` array with `{ id, identifier, title }` for immediate child issues
+  - Available in all issue commands: `read`, `list`, and `search`
+
+### Changed
+
+- Under-the-hood stability bug fixes.
+
 ## [2025.11.1] - 2025-11-06
 
 ### Added
@@ -41,6 +54,7 @@ All notable changes to this project will be documented in this file. The format 
 
 - Initial release of Linearis CLI tool
 
+[2025.11.1]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
 [2025.11.1]: https://github.com/czottmann/linearis/compare/1.1.0...2025.11.1
 [1.1.0]: https://github.com/czottmann/linearis/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/czottmann/linearis/releases/tag/1.0.0

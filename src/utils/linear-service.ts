@@ -8,12 +8,16 @@ import {
   LinearProject,
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier } from "./identifier-parser.js";
 
 // Default pagination limit for Linear SDK queries to avoid complexity errors
 const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 
 /**
  * Generic ID resolver that handles UUID validation and passthrough
+ * 
+ * @param input - Input string that may be a UUID or identifier
+ * @returns UUID as-is, or original string for non-UUID inputs
  */
 function resolveId(input: string): string {
   if (isUuid(input)) {
@@ -25,6 +29,10 @@ function resolveId(input: string): string {
 
 /**
  * Build common GraphQL filter for name/key equality searches
+ * 
+ * @param field - GraphQL field name
+ * @param value - Value to match exactly
+ * @returns GraphQL filter object
  */
 function buildEqualityFilter(field: string, value: string): any {
   return {
@@ -34,6 +42,12 @@ function buildEqualityFilter(field: string, value: string): any {
 
 /**
  * Execute a Linear client query and handle "not found" errors consistently
+ * 
+ * @param queryFn - Function that returns a promise with nodes array
+ * @param entityName - Human-readable entity name for error messages
+ * @param identifier - The identifier used in the query
+ * @returns The first node from the result
+ * @throws Error if no nodes are found
  */
 async function executeLinearQuery<T>(
   queryFn: () => Promise<{ nodes: T[] }>,
@@ -47,15 +61,46 @@ async function executeLinearQuery<T>(
   return result.nodes[0];
 }
 
+/**
+ * Linear SDK service with smart ID resolution and optimized operations
+ * 
+ * Provides fallback operations and comprehensive ID resolution for Linear entities.
+ * This service handles human-friendly identifiers (TEAM-123, project names, etc.)
+ * and resolves them to Linear UUIDs for API operations.
+ * 
+ * Features:
+ * - Smart ID resolution for teams, projects, labels, and issues
+ * - Fallback operations when GraphQL optimizations aren't available
+ * - Consistent error handling and messaging
+ * - Batch operations where possible
+ */
 export class LinearService {
   private client: LinearClient;
 
+  /**
+   * Initialize Linear service with authentication
+   * 
+   * @param apiToken - Linear API token for authentication
+   */
   constructor(apiToken: string) {
     this.client = new LinearClient({ apiKey: apiToken });
   }
 
   /**
    * Resolve issue identifier to UUID (lightweight version for ID-only resolution)
+   * 
+   * @param issueId - Either a UUID string or TEAM-123 format identifier
+   * @returns The resolved UUID string
+   * @throws Error if the issue identifier format is invalid or issue not found
+   * 
+   * @example
+   * ```typescript
+   * // Using UUID
+   * const uuid1 = await resolveIssueId("123e4567-e89b-12d3-a456-426614174000");
+   * 
+   * // Using TEAM-123 format
+   * const uuid2 = await resolveIssueId("ABC-123");
+   * ```
    */
   async resolveIssueId(issueId: string): Promise<string> {
     // Return UUID as-is
@@ -64,19 +109,7 @@ export class LinearService {
     }
 
     // Parse identifier (ABC-123 format) and resolve to UUID
-    const parts = issueId.split("-");
-    if (parts.length !== 2) {
-      throw new Error(
-        `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
-      );
-    }
-
-    const teamKey = parts[0];
-    const issueNumber = parseInt(parts[1]);
-
-    if (isNaN(issueNumber)) {
-      throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-    }
+    const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
 
     const issues = await this.client.issues({
       filter: {

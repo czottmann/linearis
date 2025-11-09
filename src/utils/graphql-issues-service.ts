@@ -20,6 +20,10 @@ import type {
 } from "./linear-types.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
+import {
+  parseIssueIdentifier,
+  tryParseIssueIdentifier,
+} from "./identifier-parser.js";
 
 /**
  * GraphQL-optimized issues service for single API call operations
@@ -53,6 +57,19 @@ export class GraphQLIssuesService {
   /**
    * Get issue by ID with all relationships and comments in single query
    * Reduces from 7 API calls to 1 API call
+   *
+   * @param issueId - Either a UUID string or TEAM-123 format identifier
+   * @returns Complete issue data with all relationships resolved
+   * @throws Error if issue is not found
+   *
+   * @example
+   * ```typescript
+   * // Using UUID
+   * const issue1 = await getIssueById("123e4567-e89b-12d3-a456-426614174000");
+   *
+   * // Using TEAM-123 format
+   * const issue2 = await getIssueById("ABC-123");
+   * ```
    */
   async getIssueById(issueId: string): Promise<LinearIssue> {
     let issueData;
@@ -72,19 +89,7 @@ export class GraphQLIssuesService {
       issueData = result.issue;
     } else {
       // Parse identifier (ABC-123 format)
-      const parts = issueId.split("-");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
-        );
-      }
-
-      const teamKey = parts[0];
-      const issueNumber = parseInt(parts[1]);
-
-      if (isNaN(issueNumber)) {
-        throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-      }
+      const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
 
       const result = await this.graphQLService.rawRequest(
         GET_ISSUE_BY_IDENTIFIER_QUERY,
@@ -110,6 +115,19 @@ export class GraphQLIssuesService {
    *
    * @param args Update arguments (supports label names and handles adding vs overwriting modes)
    * @param labelMode How to handle labels: 'adding' (merge with existing) or 'overwriting' (replace all)
+   * @returns Updated issue with all relationships resolved
+   *
+   * @example
+   * ```typescript
+   * const updatedIssue = await updateIssue(
+   *   {
+   *     id: "ABC-123",
+   *     title: "New Title",
+   *     labels: ["Bug", "High Priority"]
+   *   },
+   *   "adding"
+   * );
+   * ```
    */
   async updateIssue(
     args: UpdateIssueArgs,
@@ -123,18 +141,9 @@ export class GraphQLIssuesService {
 
     // Parse issue ID if it's an identifier
     if (!isUuid(args.id)) {
-      const parts = args.id.split("-");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid issue identifier format: "${args.id}". Expected format: TEAM-123`,
-        );
-      }
-      resolveVariables.teamKey = parts[0];
-      resolveVariables.issueNumber = parseInt(parts[1]);
-
-      if (isNaN(resolveVariables.issueNumber)) {
-        throw new Error(`Invalid issue number in identifier: "${args.id}"`);
-      }
+      const { teamKey, issueNumber } = parseIssueIdentifier(args.id);
+      resolveVariables.teamKey = teamKey;
+      resolveVariables.issueNumber = issueNumber;
     }
 
     // Add label names for resolution if provided
@@ -397,15 +406,12 @@ export class GraphQLIssuesService {
     }
 
     // Parse parent issue identifier if provided
+    // Uses tryParseIssueIdentifier to silently handle invalid formats (parent will be ignored)
     if (args.parentId && !isUuid(args.parentId)) {
-      const parts = args.parentId.split("-");
-      if (parts.length === 2) {
-        const teamKey = parts[0];
-        const issueNumber = parseInt(parts[1]);
-        if (!isNaN(issueNumber)) {
-          resolveVariables.parentTeamKey = teamKey;
-          resolveVariables.parentIssueNumber = issueNumber;
-        }
+      const parentParsed = tryParseIssueIdentifier(args.parentId);
+      if (parentParsed) {
+        resolveVariables.parentTeamKey = parentParsed.teamKey;
+        resolveVariables.parentIssueNumber = parentParsed.issueNumber;
       }
     }
 
@@ -766,6 +772,18 @@ export class GraphQLIssuesService {
         id: label.id,
         name: label.name,
       })),
+      parent: issue.parent
+        ? {
+          id: issue.parent.id,
+          identifier: issue.parent.identifier,
+          title: issue.parent.title,
+        }
+        : undefined,
+      children: issue.children?.nodes.map((child: any) => ({
+        id: child.id,
+        identifier: child.identifier,
+        title: child.title,
+      })) || undefined,
       comments: issue.comments?.nodes.map((comment: any) => ({
         id: comment.id,
         body: comment.body,

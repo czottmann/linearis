@@ -6,7 +6,19 @@ import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
  * Setup issues commands on the program
- * @param program - Commander.js program instance
+ * 
+ * Registers the `issues` command group with comprehensive issue management
+ * operations including create, read, list, search, and update functionality.
+ * Uses optimized GraphQL queries for efficient data retrieval.
+ * 
+ * @param program - Commander.js program instance to register commands on
+ * 
+ * @example
+ * ```typescript
+ * // In main.ts
+ * setupIssuesCommands(program);
+ * // Enables: linearis issues list|read|search|create|update ...
+ * ```
  */
 export function setupIssuesCommands(program: Command): void {
   const issues = program.command("issues")
@@ -17,12 +29,21 @@ export function setupIssuesCommands(program: Command): void {
     issues.help();
   });
 
+  /**
+   * List issues
+   * 
+   * Command: `linearis issues list [--limit <number>]`
+   * 
+   * Lists issues with all relationships in a single optimized GraphQL query.
+   * Includes comments, assignees, projects, labels, and state information.
+   */
   issues.command("list")
     .description("List issues.")
     .option("-l, --limit <number>", "limit results", "25")
     .action(
       handleAsyncCommand(
         async (options: any, command: Command) => {
+          // Initialize both services for comprehensive issue data
           const [graphQLService, linearService] = await Promise.all([
             createGraphQLService(command.parent!.parent!.opts()),
             createLinearService(command.parent!.parent!.opts()),
@@ -31,12 +52,22 @@ export function setupIssuesCommands(program: Command): void {
             graphQLService,
             linearService,
           );
+          
+          // Fetch issues with optimized single query
           const result = await issuesService.getIssues(parseInt(options.limit));
           outputSuccess(result);
         },
       ),
     );
 
+  /**
+   * Search issues
+   * 
+   * Command: `linearis issues search <query> [options]`
+   * 
+   * Searches issues with optional filtering by team, assignee, project,
+   * and workflow states. Uses optimized GraphQL queries with batch resolution.
+   */
   issues.command("search <query>")
     .description("Search issues.")
     .option("--team <team>", "filter by team key, name, or ID")
@@ -70,6 +101,15 @@ export function setupIssuesCommands(program: Command): void {
       ),
     );
 
+  /**
+   * Create new issue
+   * 
+   * Command: `linearis issues create <title> [options]`
+   * 
+   * Creates a new issue with optional description, assignee, priority,
+   * project, labels, and milestone. Uses smart ID resolution for all
+   * entity references (teams, projects, labels, etc.).
+   */
   issues.command("create <title>")
     .description("Create new issue.")
     .option("-d, --description <desc>", "issue description")
@@ -129,6 +169,14 @@ export function setupIssuesCommands(program: Command): void {
       ),
     );
 
+  /**
+   * Get issue details
+   * 
+   * Command: `linearis issues read <issueId>`
+   * 
+   * Retrieves complete issue details including all relationships and comments
+   * in a single optimized GraphQL query. Supports both UUID and TEAM-123 formats.
+   */
   issues.command("read <issueId>")
     .description("Get issue details.")
     .addHelpText(
@@ -138,6 +186,7 @@ export function setupIssuesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (issueId: string, _options: any, command: Command) => {
+          // Initialize both services for comprehensive issue data
           const [graphQLService, linearService] = await Promise.all([
             createGraphQLService(command.parent!.parent!.opts()),
             createLinearService(command.parent!.parent!.opts()),
@@ -146,12 +195,23 @@ export function setupIssuesCommands(program: Command): void {
             graphQLService,
             linearService,
           );
+          
+          // Get issue with all relationships and comments
           const result = await issuesService.getIssueById(issueId);
           outputSuccess(result);
         },
       ),
     );
 
+  /**
+   * Update an issue
+   * 
+   * Command: `linearis issues update <issueId> [options]`
+   * 
+   * Updates issue properties including title, description, state, priority,
+   * assignee, project, labels, and parent relationship. Supports both
+   * label adding and overwriting modes.
+   */
   issues.command("update <issueId>")
     .description("Update an issue.")
     .addHelpText(

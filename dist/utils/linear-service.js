@@ -1,6 +1,7 @@
 import { LinearClient } from "@linear/sdk";
 import { getApiToken } from "./auth.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier } from "./identifier-parser.js";
 const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 function resolveId(input) {
     if (isUuid(input)) {
@@ -29,15 +30,7 @@ export class LinearService {
         if (isUuid(issueId)) {
             return issueId;
         }
-        const parts = issueId.split("-");
-        if (parts.length !== 2) {
-            throw new Error(`Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`);
-        }
-        const teamKey = parts[0];
-        const issueNumber = parseInt(parts[1]);
-        if (isNaN(issueNumber)) {
-            throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-        }
+        const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
         const issues = await this.client.issues({
             filter: {
                 number: { eq: issueNumber },

@@ -1,5 +1,10 @@
 /**
  * Optimized GraphQL queries for issue operations
+ * 
+ * This module contains highly optimized GraphQL queries that fetch
+ * all necessary issue data in single requests, eliminating N+1 query
+ * problem common with Linear SDK. Each query uses comprehensive
+ * fragments to ensure consistent data structures.
  */
 
 import {
@@ -9,6 +14,10 @@ import {
 
 /**
  * Get issues list with all relationships in single query
+ * 
+ * Fetches paginated issues excluding completed ones,
+ * ordered by most recently updated. Includes all relationships
+ * for comprehensive issue data.
  */
 export const GET_ISSUES_QUERY = `
   query GetIssues($first: Int!, $orderBy: PaginationOrderBy) {
@@ -27,7 +36,10 @@ export const GET_ISSUES_QUERY = `
 `;
 
 /**
- * Search issues with all relationships in single query
+ * Search issues with text search and all relationships in single query
+ * 
+ * Provides full-text search across Linear issues with complete
+ * relationship data for each match.
  */
 export const SEARCH_ISSUES_QUERY = `
   query SearchIssues($term: String!, $first: Int!) {
@@ -40,7 +52,10 @@ export const SEARCH_ISSUES_QUERY = `
 `;
 
 /**
- * Search issues with filters and all relationships in single query
+ * Search issues with advanced filters and all relationships in single query
+ * 
+ * Supports filtering by team, assignee, project, and states.
+ * Used by the advanced search functionality with multiple criteria.
  */
 export const FILTERED_SEARCH_ISSUES_QUERY = `
   query FilteredSearchIssues(
@@ -62,7 +77,11 @@ export const FILTERED_SEARCH_ISSUES_QUERY = `
 `;
 
 /**
- * Batch resolve for search filters
+ * Batch resolve query for search filters
+ * 
+ * Resolves human-readable identifiers to UUIDs in a single batch query.
+ * Used to pre-resolve teams, projects, and assignees before executing
+ * main search query to avoid N+1 queries.
  */
 export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
   query BatchResolveForSearch(
@@ -108,7 +127,10 @@ export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
 `;
 
 /**
- * Get single issue with comments and all relationships
+ * Get single issue by UUID with comments and all relationships
+ * 
+ * Fetches complete issue data including comments by direct UUID lookup.
+ * Uses the comprehensive fragment with comment data for detailed view.
  */
 export const GET_ISSUE_BY_ID_QUERY = `
   query GetIssue($id: String!) {
@@ -121,6 +143,9 @@ export const GET_ISSUE_BY_ID_QUERY = `
 
 /**
  * Get issue by identifier (team key + number)
+ * 
+ * Fetches issue using TEAM-123 format. Resolves team key and
+ * issue number to find the exact issue, returning complete data with comments.
  */
 export const GET_ISSUE_BY_IDENTIFIER_QUERY = `
   query GetIssueByIdentifier($teamKey: String!, $number: Float!) {
@@ -140,6 +165,10 @@ export const GET_ISSUE_BY_IDENTIFIER_QUERY = `
 
 /**
  * Comprehensive batch resolve for update operations
+ * 
+ * Resolves all necessary entity references in a single batch query
+ * before issue update. Includes labels, projects, teams, and parent issues.
+ * This prevents N+1 queries during update operations.
  */
 export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
   query BatchResolveForUpdate(
@@ -193,7 +222,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
       }
     }
 
-    # Resolve issue by identifier if needed
+    # Resolve issue identifier if provided
     issues(
       filter: {
         and: [
@@ -219,6 +248,10 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
 
 /**
  * Create issue mutation with complete response
+ * 
+ * Creates a new issue and returns complete issue data including
+ * all relationships. Uses the comprehensive fragment to ensure
+ * consistent data structure with read operations.
  */
 export const CREATE_ISSUE_MUTATION = `
   mutation CreateIssue($input: IssueCreateInput!) {
@@ -233,6 +266,10 @@ export const CREATE_ISSUE_MUTATION = `
 
 /**
  * Update issue mutation with complete response
+ * 
+ * Updates an existing issue and returns complete issue data with
+ * all relationships. Ensures consistency between update and read
+ * operations by using the same fragment structure.
  */
 export const UPDATE_ISSUE_MUTATION = `
   mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
@@ -247,6 +284,10 @@ export const UPDATE_ISSUE_MUTATION = `
 
 /**
  * Comprehensive batch resolve for create operations
+ * 
+ * Resolves all entity references needed for issue creation in a single
+ * batch query. Prevents N+1 queries during issue creation by
+ * pre-resolving teams, projects, labels, and parent issues.
  */
 export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
   query BatchResolveForCreate(

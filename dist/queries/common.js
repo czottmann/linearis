@@ -69,6 +69,22 @@ export const ISSUE_COMMENTS_FRAGMENT = `
     }
   }
 `;
+export const ISSUE_PARENT_FRAGMENT = `
+  parent {
+    id
+    identifier
+    title
+  }
+`;
+export const ISSUE_CHILDREN_FRAGMENT = `
+  children {
+    nodes {
+      id
+      identifier
+      title
+    }
+  }
+`;
 export const COMPLETE_ISSUE_FRAGMENT = `
   ${ISSUE_CORE_FIELDS}
   ${ISSUE_STATE_FRAGMENT}
@@ -78,6 +94,8 @@ export const COMPLETE_ISSUE_FRAGMENT = `
   ${ISSUE_LABELS_FRAGMENT}
   ${ISSUE_CYCLE_FRAGMENT}
   ${ISSUE_PROJECT_MILESTONE_FRAGMENT}
+  ${ISSUE_PARENT_FRAGMENT}
+  ${ISSUE_CHILDREN_FRAGMENT}
 `;
 export const COMPLETE_ISSUE_WITH_COMMENTS_FRAGMENT = `
   ${COMPLETE_ISSUE_FRAGMENT}

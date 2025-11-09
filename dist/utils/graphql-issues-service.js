@@ -1,6 +1,7 @@
 import { BATCH_RESOLVE_FOR_CREATE_QUERY, BATCH_RESOLVE_FOR_SEARCH_QUERY, BATCH_RESOLVE_FOR_UPDATE_QUERY, CREATE_ISSUE_MUTATION, FILTERED_SEARCH_ISSUES_QUERY, GET_ISSUE_BY_ID_QUERY, GET_ISSUE_BY_IDENTIFIER_QUERY, GET_ISSUES_QUERY, SEARCH_ISSUES_QUERY, UPDATE_ISSUE_MUTATION, } from "../queries/issues.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier, tryParseIssueIdentifier, } from "./identifier-parser.js";
 export class GraphQLIssuesService {
     graphQLService;
     linearService;
@@ -30,15 +31,7 @@ export class GraphQLIssuesService {
             issueData = result.issue;
         }
         else {
-            const parts = issueId.split("-");
-            if (parts.length !== 2) {
-                throw new Error(`Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`);
-            }
-            const teamKey = parts[0];
-            const issueNumber = parseInt(parts[1]);
-            if (isNaN(issueNumber)) {
-                throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-            }
+            const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
             const result = await this.graphQLService.rawRequest(GET_ISSUE_BY_IDENTIFIER_QUERY, {
                 teamKey,
                 number: issueNumber,
@@ -55,15 +48,9 @@ export class GraphQLIssuesService {
         let currentIssueLabels = [];
         const resolveVariables = {};
         if (!isUuid(args.id)) {
-            const parts = args.id.split("-");
-            if (parts.length !== 2) {
-                throw new Error(`Invalid issue identifier format: "${args.id}". Expected format: TEAM-123`);
-            }
-            resolveVariables.teamKey = parts[0];
-            resolveVariables.issueNumber = parseInt(parts[1]);
-            if (isNaN(resolveVariables.issueNumber)) {
-                throw new Error(`Invalid issue number in identifier: "${args.id}"`);
-            }
+            const { teamKey, issueNumber } = parseIssueIdentifier(args.id);
+            resolveVariables.teamKey = teamKey;
+            resolveVariables.issueNumber = issueNumber;
         }
         if (args.labelIds && Array.isArray(args.labelIds)) {
             const labelNames = args.labelIds.filter((id) => !isUuid(id));
@@ -250,14 +237,10 @@ export class GraphQLIssuesService {
             }
         }
         if (args.parentId && !isUuid(args.parentId)) {
-            const parts = args.parentId.split("-");
-            if (parts.length === 2) {
-                const teamKey = parts[0];
-                const issueNumber = parseInt(parts[1]);
-                if (!isNaN(issueNumber)) {
-                    resolveVariables.parentTeamKey = teamKey;
-                    resolveVariables.parentIssueNumber = issueNumber;
-                }
+            const parentParsed = tryParseIssueIdentifier(args.parentId);
+            if (parentParsed) {
+                resolveVariables.parentTeamKey = parentParsed.teamKey;
+                resolveVariables.parentIssueNumber = parentParsed.issueNumber;
             }
         }
         let resolveResult = {};
@@ -520,6 +503,18 @@ export class GraphQLIssuesService {
                 id: label.id,
                 name: label.name,
             })),
+            parent: issue.parent
+                ? {
+                    id: issue.parent.id,
+                    identifier: issue.parent.identifier,
+                    title: issue.parent.title,
+                }
+                : undefined,
+            children: issue.children?.nodes.map((child) => ({
+                id: child.id,
+                identifier: child.identifier,
+                title: child.title,
+            })) || undefined,
             comments: issue.comments?.nodes.map((comment) => ({
                 id: comment.id,
                 body: comment.body,

@@ -41,6 +41,16 @@ export interface LinearIssue {
     id: string;
     name: string;
   }>;
+  parent?: {
+    id: string;
+    identifier: string;
+    title: string;
+  };
+  children?: Array<{
+    id: string;
+    identifier: string;
+    title: string;
+  }>;
   comments?: Array<{
     id: string;
     body: string;
