@@ -397,6 +397,9 @@ export class LinearService {
     });
 
     // Fetch all relationships in parallel for all cycles
+    // Note: Uses Promise.all - entire operation fails if any team fetch fails.
+    // This ensures data consistency (all cycles have team data or none do).
+    // If partial failures are acceptable, use Promise.allSettled instead.
     const cyclesWithData = await Promise.all(
       cyclesConnection.nodes.map(async (cycle) => {
         const team = await cycle.team;
