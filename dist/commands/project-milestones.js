@@ -1,7 +1,7 @@
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
-import { CREATE_PROJECT_MILESTONE_MUTATION, FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL, FIND_PROJECT_MILESTONE_BY_NAME_SCOPED, GET_PROJECT_MILESTONE_BY_ID_QUERY, LIST_PROJECT_MILESTONES_QUERY, UPDATE_PROJECT_MILESTONE_MUTATION, } from "../queries/projectMilestones.js";
+import { CREATE_PROJECT_MILESTONE_MUTATION, FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL, FIND_PROJECT_MILESTONE_BY_NAME_SCOPED, GET_PROJECT_MILESTONE_BY_ID_QUERY, LIST_PROJECT_MILESTONES_QUERY, UPDATE_PROJECT_MILESTONE_MUTATION, } from "../queries/project-milestones.js";
 import { isUuid } from "../utils/uuid.js";
 import { multipleMatchesError, notFoundError, } from "../utils/error-messages.js";
 async function resolveMilestoneId(milestoneNameOrId, graphQLService, linearService, projectNameOrId) {

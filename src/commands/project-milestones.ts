@@ -9,7 +9,7 @@ import {
   GET_PROJECT_MILESTONE_BY_ID_QUERY,
   LIST_PROJECT_MILESTONES_QUERY,
   UPDATE_PROJECT_MILESTONE_MUTATION,
-} from "../queries/projectMilestones.js";
+} from "../queries/project-milestones.js";
 import { isUuid } from "../utils/uuid.js";
 import type {
   LinearProjectMilestone,
