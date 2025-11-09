@@ -9,6 +9,7 @@ import {
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
 import { parseIssueIdentifier } from "./identifier-parser.js";
+import { multipleMatchesError, notFoundError } from "./error-messages.js";
 
 // Default pagination limit for Linear SDK queries to avoid complexity errors
 const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
@@ -575,8 +576,11 @@ export class LinearService {
     }
 
     if (nodes.length === 0) {
-      const context = teamFilter ? ` for team ${teamFilter}` : "";
-      throw new Error(`Cycle "${cycleNameOrId}"${context} not found`);
+      throw notFoundError(
+        "Cycle",
+        cycleNameOrId,
+        teamFilter ? `for team ${teamFilter}` : undefined,
+      );
     }
 
     // Disambiguate: prefer active, then next, then previous
@@ -586,11 +590,14 @@ export class LinearService {
     if (!chosen && nodes.length === 1) chosen = nodes[0];
 
     if (!chosen) {
-      const list = nodes.map((n: any) =>
+      const matches = nodes.map((n: any) =>
         `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`
-      ).join("; ");
-      throw new Error(
-        `Ambiguous cycle name "${cycleNameOrId}" — multiple matches found: ${list}. Please use an ID or scope with --team.`,
+      );
+      throw multipleMatchesError(
+        "cycle",
+        cycleNameOrId,
+        matches,
+        "use an ID or scope with --team",
       );
     }
 

@@ -6,6 +6,11 @@ import type {
   CycleReadOptions,
   LinearCycle,
 } from "../utils/linear-types.js";
+import {
+  invalidParameterError,
+  notFoundError,
+  requiresParameterError,
+} from "../utils/error-messages.js";
 
 export function setupCyclesCommands(program: Command): void {
   const cycles = program.command("cycles").description("Cycle operations");
@@ -29,7 +34,7 @@ export function setupCyclesCommands(program: Command): void {
 
           // around-active requires a team to determine the current team's active cycle
           if (options.aroundActive && !options.team) {
-            throw new Error("--around-active requires --team to be specified");
+            throw requiresParameterError("--around-active", "--team");
           }
 
           // Fetch cycles with automatic pagination
@@ -42,16 +47,15 @@ export function setupCyclesCommands(program: Command): void {
           if (options.aroundActive) {
             const n = parseInt(options.aroundActive);
             if (isNaN(n) || n < 0) {
-              throw new Error(
-                "--around-active requires a non-negative integer",
+              throw invalidParameterError(
+                "--around-active",
+                "requires a non-negative integer",
               );
             }
 
             const activeCycle = allCycles.find((c: LinearCycle) => c.isActive);
             if (!activeCycle) {
-              throw new Error(
-                `No active cycle found for team "${options.team}"`,
-              );
+              throw notFoundError("Active cycle", options.team!, "for team");
             }
 
             const activeNumber = Number(activeCycle.number || 0);

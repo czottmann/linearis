@@ -459,7 +459,7 @@ describe("LinearService - Cycle Methods", () => {
       mockClient.cycles.mockResolvedValue({ nodes: mockCycles });
 
       await expect(service.resolveCycleId("Sprint 1")).rejects.toThrow(
-        /Ambiguous cycle name "Sprint 1"/,
+        /Multiple cycles found matching "Sprint 1"/,
       );
     });
   });
@@ -506,7 +506,7 @@ describe("LinearService - Cycle Methods", () => {
       mockClient.cycles.mockResolvedValue({ nodes: mockCycles });
 
       await expect(service.resolveCycleId("Sprint 1")).rejects.toThrow(
-        /Ambiguous cycle name.*multiple matches found/,
+        /Multiple cycles found matching.*Sprint 1/,
       );
     });
 

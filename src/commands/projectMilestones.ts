@@ -19,6 +19,10 @@ import type {
   MilestoneUpdateOptions,
 } from "../utils/linear-types.js";
 import type { GraphQLService } from "../utils/graphql-service.js";
+import {
+  multipleMatchesError,
+  notFoundError,
+} from "../utils/error-messages.js";
 
 // Helper function to resolve milestone ID from name
 async function resolveMilestoneId(
@@ -58,17 +62,18 @@ async function resolveMilestoneId(
   }
 
   if (nodes.length === 0) {
-    throw new Error(`Milestone "${milestoneNameOrId}" not found`);
+    throw notFoundError("Milestone", milestoneNameOrId);
   }
 
   if (nodes.length > 1) {
-    const projectNames = nodes
-      .map((m: LinearProjectMilestone) =>
-        `"${m.name}" in project "${m.project?.name}"`
-      )
-      .join(", ");
-    throw new Error(
-      `Multiple milestones found with name "${milestoneNameOrId}": ${projectNames}. Please specify --project or use the milestone ID`,
+    const matches = nodes.map((m: LinearProjectMilestone) =>
+      `"${m.name}" in project "${m.project?.name}"`
+    );
+    throw multipleMatchesError(
+      "milestone",
+      milestoneNameOrId,
+      matches,
+      "specify --project or use the milestone ID",
     );
   }
 
