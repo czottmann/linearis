@@ -81,9 +81,7 @@ linearis labels list --team Backend
 
 ### Cycles
 
-You can list and read cycles (sprints) for teams. The CLI exposes simple helpers,
-but the GraphQL API provides a few cycle-related fields you can use to
-identify relatives (active, next, previous).
+You can list and read cycles (sprints) for teams. The CLI exposes simple helpers, but the GraphQL API provides a few cycle-related fields you can use to identify relatives (active, next, previous).
 
 ```bash
 # List cycles (optionally scope to a team)
@@ -97,18 +95,30 @@ linearis cycles read "Sprint 2025-10" --team Backend
 ```
 
 Ordering and getting "active +/- 1"
-- The cycles returned by the API include fields `isActive`, `isNext`, `isPrevious`
-  and a numerical `number` field. The CLI will prefer an active/next/previous
-  candidate when resolving ambiguous cycle names.
-- To get the active and the next cycle programmatically, do two calls locally:
-  1) `linearis cycles list --team Backend --active --limit 1` to get the active
-     cycle and its `number`.
-  2) `linearis cycles list --team Backend --limit 10` and pick the cycle with
-     `number = (active.number + 1)` or check `isNext` on the returned nodes.
-- If multiple cycles match a name and none is marked active/next/previous, the
-  CLI will return an error listing the candidates so you can use a precise ID
-  or scope with `--team`.
 
+- The cycles returned by the API include fields `isActive`, `isNext`, `isPrevious` and a numerical `number` field. The CLI will prefer an active/next/previous candidate when resolving ambiguous cycle names.
+- To get the active and the next cycle programmatically, do two calls locally:
+  1. `linearis cycles list --team Backend --active --limit 1` to get the active cycle and its `number`.
+  2. `linearis cycles list --team Backend --limit 10` and pick the cycle with `number = (active.number + 1)` or check `isNext` on the returned nodes.
+- If multiple cycles match a name and none is marked active/next/previous, the CLI will return an error listing the candidates so you can use a precise ID or scope with `--team`.
+
+#### Flag Combinations
+
+The `cycles list` command supports several flag combinations:
+
+**Valid combinations:**
+
+- `cycles list` - All cycles across all teams
+- `cycles list --team Backend` - All Backend cycles
+- `cycles list --active` - Active cycles from all teams
+- `cycles list --team Backend --active` - Backend's active cycle only
+- `cycles list --team Backend --around-active 3` - Backend's active cycle ± 3 cycles
+
+**Invalid combinations:**
+
+- `cycles list --around-active 3` - ❌ Error: requires `--team`
+
+**Note:** Using `--active --around-active` together works but `--active` is redundant since `--around-active` always includes the active cycle.
 
 ### Advanced Usage
 
