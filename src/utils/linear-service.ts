@@ -15,7 +15,7 @@ const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 
 /**
  * Generic ID resolver that handles UUID validation and passthrough
- * 
+ *
  * @param input - Input string that may be a UUID or identifier
  * @returns UUID as-is, or original string for non-UUID inputs
  */
@@ -29,7 +29,7 @@ function resolveId(input: string): string {
 
 /**
  * Build common GraphQL filter for name/key equality searches
- * 
+ *
  * @param field - GraphQL field name
  * @param value - Value to match exactly
  * @returns GraphQL filter object
@@ -42,7 +42,7 @@ function buildEqualityFilter(field: string, value: string): any {
 
 /**
  * Execute a Linear client query and handle "not found" errors consistently
- * 
+ *
  * @param queryFn - Function that returns a promise with nodes array
  * @param entityName - Human-readable entity name for error messages
  * @param identifier - The identifier used in the query
@@ -63,11 +63,11 @@ async function executeLinearQuery<T>(
 
 /**
  * Linear SDK service with smart ID resolution and optimized operations
- * 
+ *
  * Provides fallback operations and comprehensive ID resolution for Linear entities.
  * This service handles human-friendly identifiers (TEAM-123, project names, etc.)
  * and resolves them to Linear UUIDs for API operations.
- * 
+ *
  * Features:
  * - Smart ID resolution for teams, projects, labels, and issues
  * - Fallback operations when GraphQL optimizations aren't available
@@ -79,7 +79,7 @@ export class LinearService {
 
   /**
    * Initialize Linear service with authentication
-   * 
+   *
    * @param apiToken - Linear API token for authentication
    */
   constructor(apiToken: string) {
@@ -88,16 +88,16 @@ export class LinearService {
 
   /**
    * Resolve issue identifier to UUID (lightweight version for ID-only resolution)
-   * 
+   *
    * @param issueId - Either a UUID string or TEAM-123 format identifier
    * @returns The resolved UUID string
    * @throws Error if the issue identifier format is invalid or issue not found
-   * 
+   *
    * @example
    * ```typescript
    * // Using UUID
    * const uuid1 = await resolveIssueId("123e4567-e89b-12d3-a456-426614174000");
-   * 
+   *
    * // Using TEAM-123 format
    * const uuid2 = await resolveIssueId("ABC-123");
    * ```
@@ -164,9 +164,14 @@ export class LinearService {
           name: lead.name,
         }
         : undefined,
+      // Linear SDK returns TimelessDate objects, convert to ISO strings for JSON serialization
       targetDate: project.targetDate ? String(project.targetDate) : undefined,
-      createdAt: project.createdAt ? String(project.createdAt) : new Date().toISOString(),
-      updatedAt: project.updatedAt ? String(project.updatedAt) : new Date().toISOString(),
+      createdAt: project.createdAt
+        ? String(project.createdAt)
+        : new Date().toISOString(),
+      updatedAt: project.updatedAt
+        ? String(project.updatedAt)
+        : new Date().toISOString(),
     }));
   }
 
@@ -399,6 +404,7 @@ export class LinearService {
           id: cycle.id,
           name: cycle.name,
           number: cycle.number,
+          // Linear SDK TimelessDate/DateTime objects, convert to strings for JSON
           startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
           endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
           isActive: cycle.isActive,
@@ -406,13 +412,15 @@ export class LinearService {
           isNext: cycle.isNext,
           progress: cycle.progress,
           issueCountHistory: cycle.issueCountHistory,
-          team: team ? {
-            id: team.id,
-            key: team.key,
-            name: team.name,
-          } : undefined,
+          team: team
+            ? {
+              id: team.id,
+              key: team.key,
+              name: team.name,
+            }
+            : undefined,
         };
-      })
+      }),
     );
 
     return cyclesWithData;
@@ -447,12 +455,23 @@ export class LinearService {
         priority: issue.priority,
         estimate: issue.estimate || undefined,
         state: state ? { id: state.id, name: state.name } : undefined,
-        assignee: assignee ? { id: assignee.id, name: assignee.name } : undefined,
-        team: issueTeam ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name } : undefined,
+        assignee: assignee
+          ? { id: assignee.id, name: assignee.name }
+          : undefined,
+        team: issueTeam
+          ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name }
+          : undefined,
         project: project ? { id: project.id, name: project.name } : undefined,
-        labels: labels.nodes.map((label: any) => ({ id: label.id, name: label.name })),
-        createdAt: issue.createdAt ? String(issue.createdAt) : new Date().toISOString(),
-        updatedAt: issue.updatedAt ? String(issue.updatedAt) : new Date().toISOString(),
+        labels: labels.nodes.map((label: any) => ({
+          id: label.id,
+          name: label.name,
+        })),
+        createdAt: issue.createdAt
+          ? String(issue.createdAt)
+          : new Date().toISOString(),
+        updatedAt: issue.updatedAt
+          ? String(issue.updatedAt)
+          : new Date().toISOString(),
       });
     }
 
@@ -460,16 +479,19 @@ export class LinearService {
       id: cycle.id,
       name: cycle.name,
       number: cycle.number,
+      // Linear SDK DateTime conversion
       startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
       endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
       isActive: cycle.isActive,
       progress: cycle.progress,
       issueCountHistory: cycle.issueCountHistory,
-      team: team ? {
-        id: team.id,
-        key: team.key,
-        name: team.name,
-      } : undefined,
+      team: team
+        ? {
+          id: team.id,
+          key: team.key,
+          name: team.name,
+        }
+        : undefined,
       issues,
     };
   }
@@ -477,7 +499,10 @@ export class LinearService {
   /**
    * Resolve cycle by name or ID
    */
-  async resolveCycleId(cycleNameOrId: string, teamFilter?: string): Promise<string> {
+  async resolveCycleId(
+    cycleNameOrId: string,
+    teamFilter?: string,
+  ): Promise<string> {
     // Return UUID as-is
     if (isUuid(cycleNameOrId)) {
       return cycleNameOrId;
@@ -508,11 +533,13 @@ export class LinearService {
         id: cycle.id,
         name: cycle.name,
         number: cycle.number,
-        startsAt: cycle.startsAt,
+        startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
         isActive: cycle.isActive,
         isNext: cycle.isNext,
         isPrevious: cycle.isPrevious,
-        team: team ? { id: team.id, key: team.key, name: team.name } : undefined,
+        team: team
+          ? { id: team.id, key: team.key, name: team.name }
+          : undefined,
       });
     }
 
@@ -532,7 +559,7 @@ export class LinearService {
         `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`
       ).join("; ");
       throw new Error(
-        `Ambiguous cycle name "${cycleNameOrId}" — multiple matches found: ${list}. Please use an ID or scope with --team.`
+        `Ambiguous cycle name "${cycleNameOrId}" — multiple matches found: ${list}. Please use an ID or scope with --team.`,
       );
     }
 
