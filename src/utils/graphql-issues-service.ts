@@ -161,7 +161,10 @@ export class GraphQLIssuesService {
     }
 
     // Add milestone name for resolution if provided and not a UUID
-    if (args.milestoneId && typeof args.milestoneId === 'string' && !isUuid(args.milestoneId)) {
+    if (
+      args.milestoneId && typeof args.milestoneId === "string" &&
+      !isUuid(args.milestoneId)
+    ) {
       resolveVariables.milestoneName = args.milestoneId;
     }
 
@@ -226,22 +229,47 @@ export class GraphQLIssuesService {
 
     // Resolve milestone ID if provided and not a UUID
     let finalMilestoneId = args.milestoneId;
-    if (args.milestoneId && typeof args.milestoneId === 'string' && !isUuid(args.milestoneId)) {
-      // First try to find milestone in project context if we have one
-      if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
-        const projectMilestone = resolveResult.projects.nodes[0].projectMilestones.nodes
+    if (
+      args.milestoneId && typeof args.milestoneId === "string" &&
+      !isUuid(args.milestoneId)
+    ) {
+      // First try to find milestone in project being set (if --project is provided)
+      // IMPORTANT: Only check resolveResult.projects if we actually asked for a project
+      // (the batch query may return unrelated project data when projectName is undefined)
+      if (
+        args.projectId &&
+        resolveResult.projects?.nodes[0]?.projectMilestones?.nodes
+      ) {
+        const projectMilestone = resolveResult.projects.nodes[0]
+          .projectMilestones.nodes
           .find((m: any) => m.name === args.milestoneId);
         if (projectMilestone) {
           finalMilestoneId = projectMilestone.id;
         }
       }
 
-      // If not found in project, try global milestone lookup
-      if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
+      // If not found in project being set, try the issue's current project
+      if (
+        finalMilestoneId && !isUuid(finalMilestoneId) &&
+        resolveResult.issues?.nodes[0]?.project?.projectMilestones?.nodes
+      ) {
+        const issueMilestone = resolveResult.issues.nodes[0].project
+          .projectMilestones.nodes
+          .find((m: any) => m.name === args.milestoneId);
+        if (issueMilestone) {
+          finalMilestoneId = issueMilestone.id;
+        }
+      }
+
+      // If still not found, try global milestone lookup (may be ambiguous)
+      if (
+        finalMilestoneId && !isUuid(finalMilestoneId) &&
+        resolveResult.milestones?.nodes?.length
+      ) {
         finalMilestoneId = resolveResult.milestones.nodes[0].id;
       }
 
-      if (!finalMilestoneId) {
+      if (!finalMilestoneId || !isUuid(finalMilestoneId)) {
         throw new Error(`Milestone "${args.milestoneId}" not found`);
       }
     }
@@ -251,9 +279,10 @@ export class GraphQLIssuesService {
     if (args.cycleId !== undefined && args.cycleId !== null) {
       if (args.cycleId === null) {
         finalCycleId = null; // explicit clear
-      } else if (typeof args.cycleId === 'string' && !isUuid(args.cycleId)) {
+      } else if (typeof args.cycleId === "string" && !isUuid(args.cycleId)) {
         // Try to get team context from resolved issue (if available)
-        let teamIdForCycle: string | undefined = resolveResult.issues?.nodes?.[0]?.team?.id;
+        let teamIdForCycle: string | undefined = resolveResult.issues?.nodes
+          ?.[0]?.team?.id;
 
         // If we don't have team from batch result but we have resolvedIssueId, fetch issue team
         if (!teamIdForCycle && resolvedIssueId && isUuid(resolvedIssueId)) {
@@ -275,9 +304,13 @@ export class GraphQLIssuesService {
             finalCycleId = scopedNodes[0].id;
           } else if (scopedNodes.length > 1) {
             // prefer active, next, previous
-            let chosen = scopedNodes.find((n: any) => n.isActive) || scopedNodes.find((n: any) => n.isNext) || scopedNodes.find((n: any) => n.isPrevious);
+            let chosen = scopedNodes.find((n: any) => n.isActive) ||
+              scopedNodes.find((n: any) => n.isNext) ||
+              scopedNodes.find((n: any) => n.isPrevious);
             if (chosen) finalCycleId = chosen.id;
-            else throw new Error(`Ambiguous cycle name "${args.cycleId}" for team ${teamIdForCycle}. Use ID or disambiguate.`);
+            else {throw new Error(
+                `Ambiguous cycle name "${args.cycleId}" for team ${teamIdForCycle}. Use ID or disambiguate.`,
+              );}
           }
         }
 
@@ -291,9 +324,13 @@ export class GraphQLIssuesService {
           if (globalNodes.length === 1) {
             finalCycleId = globalNodes[0].id;
           } else if (globalNodes.length > 1) {
-            let chosen = globalNodes.find((n: any) => n.isActive) || globalNodes.find((n: any) => n.isNext) || globalNodes.find((n: any) => n.isPrevious);
+            let chosen = globalNodes.find((n: any) => n.isActive) ||
+              globalNodes.find((n: any) => n.isNext) ||
+              globalNodes.find((n: any) => n.isPrevious);
             if (chosen) finalCycleId = chosen.id;
-            else throw new Error(`Ambiguous cycle name "${args.cycleId}" — multiple matches found across teams. Use ID or scope with team.`);
+            else {throw new Error(
+                `Ambiguous cycle name "${args.cycleId}" — multiple matches found across teams. Use ID or scope with team.`,
+              );}
           }
         }
 
@@ -342,7 +379,9 @@ export class GraphQLIssuesService {
     if (finalCycleId !== undefined) updateInput.cycleId = finalCycleId;
     if (args.estimate !== undefined) updateInput.estimate = args.estimate;
     if (args.parentId !== undefined) updateInput.parentId = args.parentId;
-    if (finalMilestoneId !== undefined) updateInput.projectMilestoneId = finalMilestoneId;
+    if (finalMilestoneId !== undefined) {
+      updateInput.projectMilestoneId = finalMilestoneId;
+    }
     if (finalLabelIds !== undefined) {
       updateInput.labelIds = finalLabelIds;
     }
@@ -480,28 +519,34 @@ export class GraphQLIssuesService {
     // Resolve milestone ID if provided and not a UUID
     let finalMilestoneId = args.milestoneId;
     if (args.milestoneId && !isUuid(args.milestoneId)) {
-      // First try to find milestone in project context if we have one
+      // Try to find milestone in project context (milestones must be in same project as issue)
       if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
-        const projectMilestone = resolveResult.projects.nodes[0].projectMilestones.nodes
+        const projectMilestone = resolveResult.projects.nodes[0]
+          .projectMilestones.nodes
           .find((m: any) => m.name === args.milestoneId);
         if (projectMilestone) {
           finalMilestoneId = projectMilestone.id;
         }
       }
 
-      // If not found in project, try global milestone lookup
+      // If not found in project context, try global milestone lookup (may fail if wrong project)
       if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
         finalMilestoneId = resolveResult.milestones.nodes[0].id;
       }
 
       if (!finalMilestoneId) {
-        throw new Error(`Milestone "${args.milestoneId}" not found`);
+        const hint = finalProjectId
+          ? ` in project`
+          : ` (consider specifying --project)`;
+        throw new Error(`Milestone "${args.milestoneId}" not found${hint}`);
       }
     }
 
     // Resolve cycle ID if provided (supports name resolution scoped to team)
     let finalCycleId = args.cycleId;
-    if (args.cycleId && typeof args.cycleId === 'string' && !isUuid(args.cycleId)) {
+    if (
+      args.cycleId && typeof args.cycleId === "string" && !isUuid(args.cycleId)
+    ) {
       // Try scoped lookup within finalTeamId first
       if (finalTeamId) {
         const scopedRes = await this.graphQLService.rawRequest(

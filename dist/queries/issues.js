@@ -176,6 +176,15 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
             name
           }
         }
+        project {
+          id
+          projectMilestones {
+            nodes {
+              id
+              name
+            }
+          }
+        }
       }
     }
   }
