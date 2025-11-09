@@ -22,5 +22,14 @@ npm-debug.log*
 .DS_Store
 ._*
 
+# Catalyst dev thoughts
+thoughts/
+
+# Test scripts
+test-pr4.sh
+
+# Test coverage
+coverage/
+
 # Temp files etc.
 tmp/

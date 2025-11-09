@@ -5,6 +5,8 @@ import { setupEmbedsCommands } from "./commands/embeds.js";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
+import { setupCyclesCommands } from "./commands/cycles.js";
+import { setupProjectMilestonesCommands } from "./commands/projectMilestones.js";
 import { outputUsageInfo } from "./utils/usage.js";
 program
     .name("linearis")
@@ -18,6 +20,8 @@ setupIssuesCommands(program);
 setupCommentsCommands(program);
 setupLabelsCommands(program);
 setupProjectsCommands(program);
+setupCyclesCommands(program);
+setupProjectMilestonesCommands(program);
 setupEmbedsCommands(program);
 program.command("usage")
     .description("show usage info for *all* tools")
