@@ -2,17 +2,28 @@ import { Command } from "commander";
 import { createGraphQLService } from "../utils/graphql-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 import {
-  LIST_PROJECT_MILESTONES_QUERY,
-  GET_PROJECT_MILESTONE_BY_ID_QUERY,
-  FIND_PROJECT_MILESTONE_BY_NAME_SCOPED,
-  FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL,
   CREATE_PROJECT_MILESTONE_MUTATION,
+  FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL,
+  FIND_PROJECT_MILESTONE_BY_NAME_SCOPED,
+  GET_PROJECT_MILESTONE_BY_ID_QUERY,
+  LIST_PROJECT_MILESTONES_QUERY,
   UPDATE_PROJECT_MILESTONE_MUTATION,
 } from "../queries/projectMilestones.js";
 import { isUuid } from "../utils/uuid.js";
+import type {
+  LinearProjectMilestone,
+  MilestoneCreateOptions,
+  MilestoneListOptions,
+  MilestoneReadOptions,
+  MilestoneUpdateOptions,
+} from "../utils/linear-types.js";
+import type { GraphQLService } from "../utils/graphql-service.js";
 
 // Helper function to resolve project ID from name
-async function resolveProjectId(projectNameOrId: string, graphQLService: any): Promise<string> {
+async function resolveProjectId(
+  projectNameOrId: string,
+  graphQLService: GraphQLService,
+): Promise<string> {
   if (isUuid(projectNameOrId)) {
     return projectNameOrId;
   }
@@ -33,14 +44,14 @@ async function resolveProjectId(projectNameOrId: string, graphQLService: any): P
 // Helper function to resolve milestone ID from name
 async function resolveMilestoneId(
   milestoneNameOrId: string,
-  graphQLService: any,
-  projectNameOrId?: string
+  graphQLService: GraphQLService,
+  projectNameOrId?: string,
 ): Promise<string> {
   if (isUuid(milestoneNameOrId)) {
     return milestoneNameOrId;
   }
 
-  let nodes: any[] = [];
+  let nodes: LinearProjectMilestone[] = [];
 
   if (projectNameOrId) {
     // Resolve project ID first
@@ -72,7 +83,9 @@ async function resolveMilestoneId(
 
   if (nodes.length > 1) {
     const projectNames = nodes
-      .map((m: any) => `"${m.name}" in project "${m.project?.name}"`)
+      .map((m: LinearProjectMilestone) =>
+        `"${m.name}" in project "${m.project?.name}"`
+      )
       .join(", ");
     throw new Error(
       `Multiple milestones found with name "${milestoneNameOrId}": ${projectNames}. Please specify --project or use the milestone ID`,
@@ -96,24 +109,29 @@ export function setupProjectMilestonesCommands(program: Command): void {
     .requiredOption("--project <project>", "project name or ID")
     .option("-l, --limit <number>", "limit results", "50")
     .action(
-      handleAsyncCommand(async (options: any, command: Command) => {
-        const graphQLService = await createGraphQLService(
-          command.parent!.parent!.opts(),
-        );
+      handleAsyncCommand(
+        async (options: MilestoneListOptions, command: Command) => {
+          const graphQLService = await createGraphQLService(
+            command.parent!.parent!.opts(),
+          );
 
-        // Resolve project ID if needed
-        const projectId = await resolveProjectId(options.project, graphQLService);
+          // Resolve project ID if needed
+          const projectId = await resolveProjectId(
+            options.project,
+            graphQLService,
+          );
 
-        const result = await graphQLService.rawRequest(
-          LIST_PROJECT_MILESTONES_QUERY,
-          {
-            projectId,
-            first: parseInt(options.limit),
-          },
-        );
+          const result = await graphQLService.rawRequest(
+            LIST_PROJECT_MILESTONES_QUERY,
+            {
+              projectId,
+              first: parseInt(options.limit || "50"),
+            },
+          );
 
-        outputSuccess(result.project?.projectMilestones?.nodes || []);
-      }),
+          outputSuccess(result.project?.projectMilestones?.nodes || []);
+        },
+      ),
     );
 
   // Get milestone details with issues
@@ -126,7 +144,11 @@ export function setupProjectMilestonesCommands(program: Command): void {
     .option("--issues-first <n>", "how many issues to fetch (default 50)", "50")
     .action(
       handleAsyncCommand(
-        async (milestoneIdOrName: string, options: any, command: Command) => {
+        async (
+          milestoneIdOrName: string,
+          options: MilestoneReadOptions,
+          command: Command,
+        ) => {
           const graphQLService = await createGraphQLService(
             command.parent!.parent!.opts(),
           );
@@ -134,7 +156,7 @@ export function setupProjectMilestonesCommands(program: Command): void {
           const milestoneId = await resolveMilestoneId(
             milestoneIdOrName,
             graphQLService,
-            options.project
+            options.project,
           );
 
           const result = await graphQLService.rawRequest(
@@ -159,13 +181,20 @@ export function setupProjectMilestonesCommands(program: Command): void {
     .option("--target-date <date>", "target date in ISO format (YYYY-MM-DD)")
     .action(
       handleAsyncCommand(
-        async (name: string, options: any, command: Command) => {
+        async (
+          name: string,
+          options: MilestoneCreateOptions,
+          command: Command,
+        ) => {
           const graphQLService = await createGraphQLService(
             command.parent!.parent!.opts(),
           );
 
           // Resolve project ID if needed
-          const projectId = await resolveProjectId(options.project, graphQLService);
+          const projectId = await resolveProjectId(
+            options.project,
+            graphQLService,
+          );
 
           const result = await graphQLService.rawRequest(
             CREATE_PROJECT_MILESTONE_MUTATION,
@@ -195,11 +224,18 @@ export function setupProjectMilestonesCommands(program: Command): void {
     .option("--project <project>", "project name or ID to scope name lookup")
     .option("-n, --name <name>", "new milestone name")
     .option("-d, --description <description>", "new milestone description")
-    .option("--target-date <date>", "new target date in ISO format (YYYY-MM-DD)")
+    .option(
+      "--target-date <date>",
+      "new target date in ISO format (YYYY-MM-DD)",
+    )
     .option("--sort-order <number>", "new sort order")
     .action(
       handleAsyncCommand(
-        async (milestoneIdOrName: string, options: any, command: Command) => {
+        async (
+          milestoneIdOrName: string,
+          options: MilestoneUpdateOptions,
+          command: Command,
+        ) => {
           const graphQLService = await createGraphQLService(
             command.parent!.parent!.opts(),
           );
@@ -207,15 +243,23 @@ export function setupProjectMilestonesCommands(program: Command): void {
           const milestoneId = await resolveMilestoneId(
             milestoneIdOrName,
             graphQLService,
-            options.project
+            options.project,
           );
 
           // Build update input (only include provided fields)
-          const updateVars: any = { id: milestoneId };
+          const updateVars: Partial<LinearProjectMilestone> & { id: string } = {
+            id: milestoneId,
+          };
           if (options.name !== undefined) updateVars.name = options.name;
-          if (options.description !== undefined) updateVars.description = options.description;
-          if (options.targetDate !== undefined) updateVars.targetDate = options.targetDate;
-          if (options.sortOrder !== undefined) updateVars.sortOrder = parseFloat(options.sortOrder);
+          if (options.description !== undefined) {
+            updateVars.description = options.description;
+          }
+          if (options.targetDate !== undefined) {
+            updateVars.targetDate = options.targetDate;
+          }
+          if (options.sortOrder !== undefined) {
+            updateVars.sortOrder = parseFloat(options.sortOrder);
+          }
 
           const result = await graphQLService.rawRequest(
             UPDATE_PROJECT_MILESTONE_MUTATION,
