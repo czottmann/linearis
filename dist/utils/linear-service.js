@@ -2,6 +2,7 @@ import { LinearClient } from "@linear/sdk";
 import { getApiToken } from "./auth.js";
 import { isUuid } from "./uuid.js";
 import { parseIssueIdentifier } from "./identifier-parser.js";
+import { multipleMatchesError, notFoundError } from "./error-messages.js";
 const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 function resolveId(input) {
     if (isUuid(input)) {
@@ -74,8 +75,12 @@ export class LinearService {
                 }
                 : undefined,
             targetDate: project.targetDate ? String(project.targetDate) : undefined,
-            createdAt: project.createdAt ? String(project.createdAt) : new Date().toISOString(),
-            updatedAt: project.updatedAt ? String(project.updatedAt) : new Date().toISOString(),
+            createdAt: project.createdAt
+                ? String(project.createdAt)
+                : new Date().toISOString(),
+            updatedAt: project.updatedAt
+                ? String(project.updatedAt)
+                : new Date().toISOString(),
         }));
     }
     async resolveTeamId(teamKeyOrNameOrId) {
@@ -242,11 +247,13 @@ export class LinearService {
                 isNext: cycle.isNext,
                 progress: cycle.progress,
                 issueCountHistory: cycle.issueCountHistory,
-                team: team ? {
-                    id: team.id,
-                    key: team.key,
-                    name: team.name,
-                } : undefined,
+                team: team
+                    ? {
+                        id: team.id,
+                        key: team.key,
+                        name: team.name,
+                    }
+                    : undefined,
             };
         }));
         return cyclesWithData;
@@ -274,12 +281,23 @@ export class LinearService {
                 priority: issue.priority,
                 estimate: issue.estimate || undefined,
                 state: state ? { id: state.id, name: state.name } : undefined,
-                assignee: assignee ? { id: assignee.id, name: assignee.name } : undefined,
-                team: issueTeam ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name } : undefined,
+                assignee: assignee
+                    ? { id: assignee.id, name: assignee.name }
+                    : undefined,
+                team: issueTeam
+                    ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name }
+                    : undefined,
                 project: project ? { id: project.id, name: project.name } : undefined,
-                labels: labels.nodes.map((label) => ({ id: label.id, name: label.name })),
-                createdAt: issue.createdAt ? String(issue.createdAt) : new Date().toISOString(),
-                updatedAt: issue.updatedAt ? String(issue.updatedAt) : new Date().toISOString(),
+                labels: labels.nodes.map((label) => ({
+                    id: label.id,
+                    name: label.name,
+                })),
+                createdAt: issue.createdAt
+                    ? String(issue.createdAt)
+                    : new Date().toISOString(),
+                updatedAt: issue.updatedAt
+                    ? String(issue.updatedAt)
+                    : new Date().toISOString(),
             });
         }
         return {
@@ -291,11 +309,13 @@ export class LinearService {
             isActive: cycle.isActive,
             progress: cycle.progress,
             issueCountHistory: cycle.issueCountHistory,
-            team: team ? {
-                id: team.id,
-                key: team.key,
-                name: team.name,
-            } : undefined,
+            team: team
+                ? {
+                    id: team.id,
+                    key: team.key,
+                    name: team.name,
+                }
+                : undefined,
             issues,
         };
     }
@@ -322,16 +342,17 @@ export class LinearService {
                 id: cycle.id,
                 name: cycle.name,
                 number: cycle.number,
-                startsAt: cycle.startsAt,
+                startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
                 isActive: cycle.isActive,
                 isNext: cycle.isNext,
                 isPrevious: cycle.isPrevious,
-                team: team ? { id: team.id, key: team.key, name: team.name } : undefined,
+                team: team
+                    ? { id: team.id, key: team.key, name: team.name }
+                    : undefined,
             });
         }
         if (nodes.length === 0) {
-            const context = teamFilter ? ` for team ${teamFilter}` : "";
-            throw new Error(`Cycle "${cycleNameOrId}"${context} not found`);
+            throw notFoundError("Cycle", cycleNameOrId, teamFilter ? `for team ${teamFilter}` : undefined);
         }
         let chosen = nodes.find((n) => n.isActive);
         if (!chosen)
@@ -341,10 +362,21 @@ export class LinearService {
         if (!chosen && nodes.length === 1)
             chosen = nodes[0];
         if (!chosen) {
-            const list = nodes.map((n) => `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`).join("; ");
-            throw new Error(`Ambiguous cycle name "${cycleNameOrId}" — multiple matches found: ${list}. Please use an ID or scope with --team.`);
+            const matches = nodes.map((n) => `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`);
+            throw multipleMatchesError("cycle", cycleNameOrId, matches, "use an ID or scope with --team");
         }
         return chosen.id;
+    }
+    async resolveProjectId(projectNameOrId) {
+        if (isUuid(projectNameOrId)) {
+            return projectNameOrId;
+        }
+        const filter = buildEqualityFilter("name", projectNameOrId);
+        const projectsConnection = await this.client.projects({ filter, first: 1 });
+        if (projectsConnection.nodes.length === 0) {
+            throw new Error(`Project "${projectNameOrId}" not found`);
+        }
+        return projectsConnection.nodes[0].id;
     }
 }
 export async function createLinearService(options) {

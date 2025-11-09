@@ -1,25 +1,16 @@
 import { createGraphQLService } from "../utils/graphql-service.js";
+import { createLinearService } from "../utils/linear-service.js";
 import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
-import { LIST_PROJECT_MILESTONES_QUERY, GET_PROJECT_MILESTONE_BY_ID_QUERY, FIND_PROJECT_MILESTONE_BY_NAME_SCOPED, FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL, CREATE_PROJECT_MILESTONE_MUTATION, UPDATE_PROJECT_MILESTONE_MUTATION, } from "../queries/projectMilestones.js";
+import { CREATE_PROJECT_MILESTONE_MUTATION, FIND_PROJECT_MILESTONE_BY_NAME_GLOBAL, FIND_PROJECT_MILESTONE_BY_NAME_SCOPED, GET_PROJECT_MILESTONE_BY_ID_QUERY, LIST_PROJECT_MILESTONES_QUERY, UPDATE_PROJECT_MILESTONE_MUTATION, } from "../queries/projectMilestones.js";
 import { isUuid } from "../utils/uuid.js";
-async function resolveProjectId(projectNameOrId, graphQLService) {
-    if (isUuid(projectNameOrId)) {
-        return projectNameOrId;
-    }
-    const projectRes = await graphQLService.rawRequest(`query FindProject($name: String!) { projects(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`, { name: projectNameOrId });
-    const projects = projectRes.projects?.nodes || [];
-    if (!projects.length) {
-        throw new Error(`Project "${projectNameOrId}" not found`);
-    }
-    return projects[0].id;
-}
-async function resolveMilestoneId(milestoneNameOrId, graphQLService, projectNameOrId) {
+import { multipleMatchesError, notFoundError, } from "../utils/error-messages.js";
+async function resolveMilestoneId(milestoneNameOrId, graphQLService, linearService, projectNameOrId) {
     if (isUuid(milestoneNameOrId)) {
         return milestoneNameOrId;
     }
     let nodes = [];
     if (projectNameOrId) {
-        const projectId = await resolveProjectId(projectNameOrId, graphQLService);
+        const projectId = await linearService.resolveProjectId(projectNameOrId);
         const findRes = await graphQLService.rawRequest(FIND_PROJECT_MILESTONE_BY_NAME_SCOPED, {
             name: milestoneNameOrId,
             projectId,
@@ -31,13 +22,11 @@ async function resolveMilestoneId(milestoneNameOrId, graphQLService, projectName
         nodes = globalRes.projectMilestones?.nodes || [];
     }
     if (nodes.length === 0) {
-        throw new Error(`Milestone "${milestoneNameOrId}" not found`);
+        throw notFoundError("Milestone", milestoneNameOrId);
     }
     if (nodes.length > 1) {
-        const projectNames = nodes
-            .map((m) => `"${m.name}" in project "${m.project?.name}"`)
-            .join(", ");
-        throw new Error(`Multiple milestones found with name "${milestoneNameOrId}": ${projectNames}. Please specify --project or use the milestone ID`);
+        const matches = nodes.map((m) => `"${m.name}" in project "${m.project?.name}"`);
+        throw multipleMatchesError("milestone", milestoneNameOrId, matches, "specify --project or use the milestone ID");
     }
     return nodes[0].id;
 }
@@ -52,11 +41,14 @@ export function setupProjectMilestonesCommands(program) {
         .requiredOption("--project <project>", "project name or ID")
         .option("-l, --limit <number>", "limit results", "50")
         .action(handleAsyncCommand(async (options, command) => {
-        const graphQLService = await createGraphQLService(command.parent.parent.opts());
-        const projectId = await resolveProjectId(options.project, graphQLService);
+        const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent.parent.opts()),
+            createLinearService(command.parent.parent.opts()),
+        ]);
+        const projectId = await linearService.resolveProjectId(options.project);
         const result = await graphQLService.rawRequest(LIST_PROJECT_MILESTONES_QUERY, {
             projectId,
-            first: parseInt(options.limit),
+            first: parseInt(options.limit || "50"),
         });
         outputSuccess(result.project?.projectMilestones?.nodes || []);
     }));
@@ -66,8 +58,11 @@ export function setupProjectMilestonesCommands(program) {
         .option("--project <project>", "project name or ID to scope name lookup")
         .option("--issues-first <n>", "how many issues to fetch (default 50)", "50")
         .action(handleAsyncCommand(async (milestoneIdOrName, options, command) => {
-        const graphQLService = await createGraphQLService(command.parent.parent.opts());
-        const milestoneId = await resolveMilestoneId(milestoneIdOrName, graphQLService, options.project);
+        const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent.parent.opts()),
+            createLinearService(command.parent.parent.opts()),
+        ]);
+        const milestoneId = await resolveMilestoneId(milestoneIdOrName, graphQLService, linearService, options.project);
         const result = await graphQLService.rawRequest(GET_PROJECT_MILESTONE_BY_ID_QUERY, {
             id: milestoneId,
             issuesFirst: parseInt(options.issuesFirst || "50"),
@@ -81,8 +76,11 @@ export function setupProjectMilestonesCommands(program) {
         .option("-d, --description <description>", "milestone description")
         .option("--target-date <date>", "target date in ISO format (YYYY-MM-DD)")
         .action(handleAsyncCommand(async (name, options, command) => {
-        const graphQLService = await createGraphQLService(command.parent.parent.opts());
-        const projectId = await resolveProjectId(options.project, graphQLService);
+        const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent.parent.opts()),
+            createLinearService(command.parent.parent.opts()),
+        ]);
+        const projectId = await linearService.resolveProjectId(options.project);
         const result = await graphQLService.rawRequest(CREATE_PROJECT_MILESTONE_MUTATION, {
             projectId,
             name,
@@ -103,17 +101,25 @@ export function setupProjectMilestonesCommands(program) {
         .option("--target-date <date>", "new target date in ISO format (YYYY-MM-DD)")
         .option("--sort-order <number>", "new sort order")
         .action(handleAsyncCommand(async (milestoneIdOrName, options, command) => {
-        const graphQLService = await createGraphQLService(command.parent.parent.opts());
-        const milestoneId = await resolveMilestoneId(milestoneIdOrName, graphQLService, options.project);
-        const updateVars = { id: milestoneId };
+        const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent.parent.opts()),
+            createLinearService(command.parent.parent.opts()),
+        ]);
+        const milestoneId = await resolveMilestoneId(milestoneIdOrName, graphQLService, linearService, options.project);
+        const updateVars = {
+            id: milestoneId,
+        };
         if (options.name !== undefined)
             updateVars.name = options.name;
-        if (options.description !== undefined)
+        if (options.description !== undefined) {
             updateVars.description = options.description;
-        if (options.targetDate !== undefined)
+        }
+        if (options.targetDate !== undefined) {
             updateVars.targetDate = options.targetDate;
-        if (options.sortOrder !== undefined)
+        }
+        if (options.sortOrder !== undefined) {
             updateVars.sortOrder = parseFloat(options.sortOrder);
+        }
         const result = await graphQLService.rawRequest(UPDATE_PROJECT_MILESTONE_MUTATION, updateVars);
         if (!result.projectMilestoneUpdate?.success) {
             throw new Error("Failed to update project milestone");
