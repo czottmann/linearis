@@ -377,6 +377,18 @@ export class LinearService {
 
   /**
    * Get all cycles with automatic pagination
+   *
+   * @param teamFilter - Optional team key, name, or ID to filter cycles
+   * @param activeOnly - If true, return only active cycles
+   * @returns Array of cycles with team information
+   *
+   * @remarks
+   * Uses Linear SDK automatic pagination with 250 cycles per request.
+   * This method will make multiple API calls if necessary to fetch all
+   * matching cycles.
+   *
+   * For workspaces with hundreds of cycles, consider using team filtering
+   * to reduce result set size and improve performance.
    */
   async getCycles(teamFilter?: string, activeOnly?: boolean): Promise<any[]> {
     const filter: any = {};
@@ -431,6 +443,22 @@ export class LinearService {
 
   /**
    * Get single cycle by ID with issues
+   *
+   * @param cycleId - Cycle UUID
+   * @param issuesLimit - Maximum issues to fetch (default 50)
+   * @returns Cycle with issues
+   *
+   * @remarks
+   * This method does not paginate issues. If a cycle has more issues than
+   * the limit, only the first N will be returned sorted by creation date.
+   *
+   * Linear API limits single requests to 250 items. Values above 250 may
+   * result in errors or truncation.
+   *
+   * To get all issues in a large cycle, either:
+   * 1. Increase the limit (up to 250)
+   * 2. Fetch issues separately using the issues API with pagination
+   * 3. Make multiple requests with cursor-based pagination
    */
   async getCycleById(cycleId: string, issuesLimit: number = 50): Promise<any> {
     const cycle = await this.client.cycle(cycleId);
