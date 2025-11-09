@@ -174,33 +174,64 @@ export interface LinearProjectMilestone {
   updatedAt: string;
 }
 
-export interface LinearProjectMilestoneWithIssues extends LinearProjectMilestone {
+export interface LinearProjectMilestoneWithIssues
+  extends LinearProjectMilestone {
   issues: LinearIssue[];
 }
 
 export interface ListProjectMilestonesArgs {
-  projectId: string;  // Project name or UUID (will be resolved)
+  projectId: string; // Project name or UUID (will be resolved)
   limit?: number;
 }
 
 export interface GetProjectMilestoneArgs {
-  milestoneId: string;  // Milestone name or UUID (will be resolved)
-  projectId?: string;   // Optional project context for name resolution
+  milestoneId: string; // Milestone name or UUID (will be resolved)
+  projectId?: string; // Optional project context for name resolution
   issuesFirst?: number; // How many issues to fetch
 }
 
 export interface CreateProjectMilestoneArgs {
   name: string;
-  projectId: string;    // Project name or UUID (will be resolved)
+  projectId: string; // Project name or UUID (will be resolved)
   description?: string;
-  targetDate?: string;  // ISO date string
+  targetDate?: string; // ISO date string
 }
 
 export interface UpdateProjectMilestoneArgs {
-  id: string;           // Milestone ID or name (will be resolved)
-  projectId?: string;   // Optional project context for name resolution
+  id: string; // Milestone ID or name (will be resolved)
+  projectId?: string; // Optional project context for name resolution
   name?: string;
   description?: string;
-  targetDate?: string;  // ISO date string
+  targetDate?: string; // ISO date string
   sortOrder?: number;
+}
+
+export interface LinearCycle {
+  id: string;
+  name: string;
+  number: number;
+  startsAt?: string;
+  endsAt?: string;
+  isActive: boolean;
+  isPrevious?: boolean;
+  isNext?: boolean;
+  progress: number;
+  issueCountHistory: number[];
+  team?: {
+    id: string;
+    key: string;
+    name: string;
+  };
+  issues?: LinearIssue[];
+}
+
+export interface CycleListOptions {
+  team?: string;
+  active?: boolean;
+  aroundActive?: string;
+}
+
+export interface CycleReadOptions {
+  team?: string;
+  issuesFirst?: string;
 }
