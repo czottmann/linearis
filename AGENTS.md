@@ -10,13 +10,13 @@ Linearis is a CLI tool for Linear.app that outputs structured JSON data, designe
 
 ## Key Commands
 
-### Development Commands
+### Development
 
 - `pnpm start` - Run CLI in development mode using tsx (no compilation)
 - `pnpm run build` - Compile TypeScript to dist/ and make executable
 - `pnpm run clean` - Remove dist/ directory
 - `node dist/main.js` - Run compiled production version
-- `pnpm test` - Tests (currently not implemented)
+- `pnpm test` - Run test suite (unit + integration tests)
 
 ### Package Management
 
@@ -24,7 +24,21 @@ Linearis is a CLI tool for Linear.app that outputs structured JSON data, designe
 - `pnpm install` - Install dependencies
 - `pnpm update` - Update dependencies
 
-## Architecture & Structure
+## Architecture
+
+### Two-Layer Service Architecture
+
+The codebase uses a dual-service pattern optimized for performance:
+
+1. **GraphQLService** (`src/utils/graphql-service.ts`) - Direct GraphQL queries with batch operations
+   - Eliminates N+1 query problems
+   - Single-query fetches for complex relationships
+   - Used by all primary commands (issues list/search/read/update/create)
+
+2. **LinearService** (`src/utils/linear-service.ts`) - SDK-based operations and smart ID resolution
+   - Human-friendly ID conversions (ABC-123 → UUID, "Bug" → label UUID)
+   - Fallback operations for complex workflows
+   - Used for ID resolution and helper operations
 
 ### Core Components
 
