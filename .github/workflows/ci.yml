@@ -36,13 +36,7 @@ jobs:
       - name: Build project
         run: pnpm run build
 
-      - name: Run unit tests
-        run: pnpm test
-
-      - name: Run integration tests (if API token available)
-        if: env.LINEAR_API_TOKEN != ''
-        env:
-          LINEAR_API_TOKEN: ${{ secrets.LINEAR_API_TOKEN }}
+      - name: Run tests
         run: pnpm test
 
   lint:
