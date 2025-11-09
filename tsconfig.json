@@ -32,6 +32,9 @@
   "exclude": [
     "node_modules",
     "dist",
+    // Tests excluded from TypeScript compilation to prevent them from
+    // being compiled into dist/. Tests are type-checked and validated
+    // by Vitest at runtime, which provides sufficient type safety.
     "tests",
     "**/*.test.ts",
     "**/*.spec.ts",
