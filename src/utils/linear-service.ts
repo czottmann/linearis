@@ -565,6 +565,28 @@ export class LinearService {
 
     return chosen.id;
   }
+
+  /**
+   * Resolve project identifier to UUID
+   *
+   * @param projectNameOrId - Project name or UUID
+   * @returns Project UUID
+   * @throws Error if project not found
+   */
+  async resolveProjectId(projectNameOrId: string): Promise<string> {
+    if (isUuid(projectNameOrId)) {
+      return projectNameOrId;
+    }
+
+    const filter = buildEqualityFilter("name", projectNameOrId);
+    const projectsConnection = await this.client.projects({ filter, first: 1 });
+
+    if (projectsConnection.nodes.length === 0) {
+      throw new Error(`Project "${projectNameOrId}" not found`);
+    }
+
+    return projectsConnection.nodes[0].id;
+  }
 }
 
 /**
