@@ -147,7 +147,7 @@ describe("LinearService - Cycle Methods", () => {
       expect(result[0].isActive).toBe(true);
     });
 
-    it("should convert dates to strings", async () => {
+    it("should convert dates to ISO 8601 strings", async () => {
       const mockCycles = [
         {
           id: "cycle-1",
@@ -176,6 +176,9 @@ describe("LinearService - Cycle Methods", () => {
 
       expect(typeof result[0].startsAt).toBe("string");
       expect(typeof result[0].endsAt).toBe("string");
+      // Verify ISO 8601 format
+      expect(result[0].startsAt).toBe("2025-01-01T00:00:00.000Z");
+      expect(result[0].endsAt).toBe("2025-01-15T23:59:59.000Z");
     });
   });
 

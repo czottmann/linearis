@@ -74,12 +74,14 @@ export class LinearService {
                     name: lead.name,
                 }
                 : undefined,
-            targetDate: project.targetDate ? String(project.targetDate) : undefined,
+            targetDate: project.targetDate
+                ? new Date(project.targetDate).toISOString()
+                : undefined,
             createdAt: project.createdAt
-                ? String(project.createdAt)
+                ? new Date(project.createdAt).toISOString()
                 : new Date().toISOString(),
             updatedAt: project.updatedAt
-                ? String(project.updatedAt)
+                ? new Date(project.updatedAt).toISOString()
                 : new Date().toISOString(),
         }));
     }
@@ -240,8 +242,12 @@ export class LinearService {
                 id: cycle.id,
                 name: cycle.name,
                 number: cycle.number,
-                startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
-                endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
+                startsAt: cycle.startsAt
+                    ? new Date(cycle.startsAt).toISOString()
+                    : undefined,
+                endsAt: cycle.endsAt
+                    ? new Date(cycle.endsAt).toISOString()
+                    : undefined,
                 isActive: cycle.isActive,
                 isPrevious: cycle.isPrevious,
                 isNext: cycle.isNext,
@@ -293,10 +299,10 @@ export class LinearService {
                     name: label.name,
                 })),
                 createdAt: issue.createdAt
-                    ? String(issue.createdAt)
+                    ? new Date(issue.createdAt).toISOString()
                     : new Date().toISOString(),
                 updatedAt: issue.updatedAt
-                    ? String(issue.updatedAt)
+                    ? new Date(issue.updatedAt).toISOString()
                     : new Date().toISOString(),
             });
         }
@@ -304,8 +310,10 @@ export class LinearService {
             id: cycle.id,
             name: cycle.name,
             number: cycle.number,
-            startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
-            endsAt: cycle.endsAt ? String(cycle.endsAt) : undefined,
+            startsAt: cycle.startsAt
+                ? new Date(cycle.startsAt).toISOString()
+                : undefined,
+            endsAt: cycle.endsAt ? new Date(cycle.endsAt).toISOString() : undefined,
             isActive: cycle.isActive,
             progress: cycle.progress,
             issueCountHistory: cycle.issueCountHistory,
@@ -342,7 +350,9 @@ export class LinearService {
                 id: cycle.id,
                 name: cycle.name,
                 number: cycle.number,
-                startsAt: cycle.startsAt ? String(cycle.startsAt) : undefined,
+                startsAt: cycle.startsAt
+                    ? new Date(cycle.startsAt).toISOString()
+                    : undefined,
                 isActive: cycle.isActive,
                 isNext: cycle.isNext,
                 isPrevious: cycle.isPrevious,
