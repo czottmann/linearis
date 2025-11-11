@@ -26,6 +26,9 @@ npm-debug.log*
 thoughts/
 coverage/
 
+# Build output (published to npm but not tracked in git)
+dist/
+
 # Test scripts (keep locally)
 test-*.sh
 *.test.sh
