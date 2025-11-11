@@ -3,27 +3,21 @@
 # Interactive release script for Linearis
 # Uses gum for interactive prompts: https://github.com/charmbracelet/gum
 
-# Color definitions
-set -l COLOR_ERROR "9"
-set -l COLOR_SUCCESS "10"
-set -l COLOR_INFO "12"
-set -l COLOR_WARNING "11"
-
 function error
-    gum style --foreground $COLOR_ERROR "✗ Error: $argv"
+    echo "🔴 Error: $argv"
     exit 1
 end
 
 function success
-    gum style --foreground $COLOR_SUCCESS "✓ $argv"
+    echo "✅ $argv"
 end
 
 function info
-    gum style --foreground $COLOR_INFO "ℹ $argv"
+    echo "ℹ️ $argv"
 end
 
 function warning
-    gum style --foreground $COLOR_WARNING "⚠ $argv"
+    echo "⚠️ $argv"
 end
 
 # Check prerequisites
@@ -38,7 +32,7 @@ end
 set current_branch (git branch --show-current)
 or error "Failed to get current branch"
 
-if test "$current_branch" != "main"
+if test "$current_branch" != main
     error "Must be on main branch (currently on: $current_branch)"
 end
 
@@ -79,8 +73,8 @@ info "Suggested next version: $suggested_version"
 echo
 
 # Interactive version input
-gum style --border double --padding "1 2" --border-foreground $COLOR_INFO "Enter the new version number"
-set new_version (gum input --placeholder "$suggested_version" --value "$suggested_version" --prompt "Version: ")
+printf "## New version number" | gum format
+set new_version (gum input --placeholder "$suggested_version" --value "$suggested_version" --prompt "Enter new version: ")
 
 if test -z "$new_version"
     error "Version cannot be empty"
@@ -95,7 +89,7 @@ success "Version: $new_version"
 echo
 
 # Get changelog entry
-gum style --border double --padding "1 2" --border-foreground $COLOR_INFO "Write release notes (Markdown supported)\nPress ESC to cancel, Ctrl+D when done"
+printf "## Write release notes\nMarkdown supported. Press ESC to cancel, Ctrl+D when done" | gum format
 set changelog_entry (gum write --placeholder "- Feature: Added X\n- Fix: Resolved Y\n- Change: Updated Z")
 
 if test -z "$changelog_entry"
@@ -106,12 +100,17 @@ success "Changelog entry captured"
 echo
 
 # Show summary
-gum style --border double --padding "1 2" --border-foreground $COLOR_WARNING "Release Summary"
-echo "Version: $current_version → $new_version"
-echo
-echo "Changelog:"
-echo "$changelog_entry"
-echo
+echo "
+## Release Summary
+
+Version: $current_version → $new_version
+
+### Changelog:
+```
+$changelog_entry
+```
+" \
+    | gum format
 
 # Confirm to proceed
 if not gum confirm "Update files and create commit?"
@@ -188,16 +187,19 @@ or error "Failed to create tag"
 success "Tag created"
 
 # Final confirmation to push
-echo
-gum style --border double --padding "1 2" --border-foreground $COLOR_WARNING "Ready to Push"
-echo "The following will be pushed to origin:"
-echo "  • Commit: $(git log -1 --oneline)"
-echo "  • Tag: v$new_version"
-echo
-echo "This will trigger the GitHub Actions workflow to:"
-echo "  1. Build the project"
-echo "  2. Run tests"
-echo "  3. Publish to npm"
+echo "
+## Ready to Push
+
+The following will be pushed to origin:
+  • Commit: $(git log -1 --oneline)
+  • Tag: v$new_version
+
+This will trigger the GitHub Actions workflow to:
+  1. Build the project
+  2. Run tests
+  3. Publish to npm
+" \
+    | gum format
 
 if not gum confirm "Push commit and tag to trigger publish?"
     warning "Commit and tag created locally but not pushed"
@@ -214,12 +216,14 @@ or error "Failed to push to origin/main"
 git push origin "v$new_version"
 or error "Failed to push tag to origin"
 
-echo
-gum style --border double --padding "1 2" --border-foreground $COLOR_SUCCESS "✅ Release Complete!"
-echo "Version: $new_version"
-echo "Tag: v$new_version"
-echo
-echo "Next steps:"
-echo "  1. Monitor GitHub Actions: https://github.com/czottmann/linearis/actions"
-echo "  2. Verify npm package: https://www.npmjs.com/package/@czottmann/linearis"
-echo "  3. Test installation: npm install -g @czottmann/linearis"
+echo "
+## ✅ Release Complete!
+Version: $new_version
+Tag: v$new_version
+
+Next steps:
+  1. Monitor GitHub Actions: https://github.com/czottmann/linearis/actions
+  2. Verify npm package: https://www.npmjs.com/package/@czottmann/linearis
+  3. Test installation: npm install -g @czottmann/linearis
+" \
+    | gum format
