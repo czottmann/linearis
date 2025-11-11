@@ -132,15 +132,29 @@ linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 
 ## Installation
 
-```bash
-# Install from GitHub (requires --install-links flag)
-npm install -g --install-links czottmann/linearis#2025.11.2
+### npm (recommended)
 
-# Development setup
-git clone <repository> && cd linearis
+```bash
+npm install -g @czottmann/linearis
+```
+
+### From source
+
+```bash
+git clone https://github.com/czottmann/linearis.git
+cd linearis
 pnpm install
-pnpm run build  # Compile TypeScript to dist/
-pnpm start  # Development mode (tsx)
+pnpm build
+npm link
+```
+
+### Development setup
+
+```bash
+git clone https://github.com/czottmann/linearis.git
+cd linearis
+pnpm install
+pnpm start  # Development mode using tsx (no compilation needed)
 ```
 
 ## Authentication

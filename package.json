@@ -1,10 +1,12 @@
 {
-  "name": "linearis",
+  "name": "@czottmann/linearis",
   "version": "2025.11.2",
   "description": "CLI tool for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.",
   "main": "dist/main.js",
   "type": "module",
-  "bin": "dist/main.js",
+  "bin": {
+    "linearis": "dist/main.js"
+  },
   "files": [
     "dist/",
     "README.md",
@@ -18,7 +20,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:commands": "tsx tests/command-coverage.ts"
+    "test:commands": "tsx tests/command-coverage.ts",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -32,6 +35,14 @@
   ],
   "author": "Carlo Zottmann <carlo@zottmann.dev>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/czottmann/linearis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/czottmann/linearis/issues"
+  },
+  "homepage": "https://github.com/czottmann/linearis#readme",
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
