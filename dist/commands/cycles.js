@@ -10,10 +10,10 @@ export function setupCyclesCommands(program) {
         .option("--active", "only active cycles")
         .option("--around-active <n>", "return active +/- n cycles (requires --team)")
         .action(handleAsyncCommand(async (options, command) => {
-        const linearService = await createLinearService(command.parent.parent.opts());
         if (options.aroundActive && !options.team) {
             throw requiresParameterError("--around-active", "--team");
         }
+        const linearService = await createLinearService(command.parent.parent.opts());
         const allCycles = await linearService.getCycles(options.team, options.active ? true : undefined);
         if (options.aroundActive) {
             const n = parseInt(options.aroundActive);

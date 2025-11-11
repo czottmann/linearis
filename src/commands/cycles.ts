@@ -28,14 +28,15 @@ export function setupCyclesCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (options: CycleListOptions, command: Command) => {
-          const linearService = await createLinearService(
-            command.parent!.parent!.opts(),
-          );
-
           // around-active requires a team to determine the current team's active cycle
+          // Validate this before authentication to provide better error messages
           if (options.aroundActive && !options.team) {
             throw requiresParameterError("--around-active", "--team");
           }
+
+          const linearService = await createLinearService(
+            command.parent!.parent!.opts(),
+          );
 
           // Fetch cycles with automatic pagination
           const allCycles = await linearService.getCycles(
