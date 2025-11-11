@@ -3,7 +3,7 @@ name: Publish to npm
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   publish:
@@ -43,8 +43,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -67,5 +67,5 @@ jobs:
 
       - name: Verify publish success
         run: |
-          echo "✅ Successfully published @czottmann/linearis@${{ steps.extract_version.outputs.version }}"
-          echo "📦 Package URL: https://www.npmjs.com/package/@czottmann/linearis"
+          echo "✅ Successfully published linearis@${{ steps.extract_version.outputs.version }}"
+          echo "📦 Package URL: https://www.npmjs.com/package/linearis"

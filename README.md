@@ -135,7 +135,7 @@ linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 ### npm (recommended)
 
 ```bash
-npm install -g @czottmann/linearis
+npm install -g linearis
 ```
 
 ### From source

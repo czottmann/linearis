@@ -224,7 +224,7 @@ Tag: v$new_version
 
 Next steps:
   1. Monitor GitHub Actions: https://github.com/czottmann/linearis/actions
-  2. Verify npm package: https://www.npmjs.com/package/@czottmann/linearis
-  3. Test installation: npm install -g @czottmann/linearis
+  2. Verify npm package: https://www.npmjs.com/package/linearis
+  3. Test installation: npm install -g linearis
 " \
     | gum format

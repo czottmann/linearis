@@ -4,11 +4,11 @@
 
 ## Overview
 
-Set up automated npm publishing for `@czottmann/linearis` using GitHub Actions, triggered by version tags on the main branch. Includes an interactive fish script using gum for streamlined local release workflow.
+Set up automated npm publishing for `linearis` using GitHub Actions, triggered by version tags on the main branch. Includes an interactive fish script using gum for streamlined local release workflow.
 
 ## Goals
 
-- Enable global installation via `npm install -g @czottmann/linearis`
+- Enable global installation via `npm install -g linearis`
 - Automate build and publish process through GitHub Actions
 - Maintain clean git history (no compiled artifacts)
 - Provide interactive release workflow for version management
@@ -31,7 +31,7 @@ Set up automated npm publishing for `@czottmann/linearis` using GitHub Actions, 
 
 ```json
 {
-  "name": "@czottmann/linearis",
+  "name": "linearis",
   "repository": {
     "type": "git",
     "url": "https://github.com/czottmann/linearis.git"
@@ -48,7 +48,7 @@ Set up automated npm publishing for `@czottmann/linearis` using GitHub Actions, 
 
 **Changes:**
 
-- Rename package to scoped name `@czottmann/linearis`
+- Rename package to scoped name `linearis`
 - Add repository, bugs, homepage for npm page
 - Add `prepublishOnly` script as safety net
 
@@ -240,13 +240,13 @@ dist/
 ### Post-Publish Verification
 
 1. **npm Registry**
-   - Visit https://www.npmjs.com/package/@czottmann/linearis
+   - Visit https://www.npmjs.com/package/linearis
    - Verify version, description, keywords
    - Check repository links work
 
 2. **Installation Test**
    ```bash
-   npm install -g @czottmann/linearis
+   npm install -g linearis
    linearis --help
    linearis usage
    ```
@@ -268,7 +268,7 @@ Add installation section:
 ### npm (recommended)
 
 ```bash
-npm install -g @czottmann/linearis
+npm install -g linearis
 ```
 ````
 
