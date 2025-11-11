@@ -1,4 +1,5 @@
 #!/usr/bin/env fish
+#MISE description="Releases new npm package"
 
 # Interactive release script for Linearis
 # Uses gum for interactive prompts: https://github.com/charmbracelet/gum
