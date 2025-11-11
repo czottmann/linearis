@@ -10,9 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
 
@@ -32,11 +29,10 @@ jobs:
       - name: Build project
         run: pnpm run build
 
-      - name: Commit built files
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Verify build artifacts
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add dist/
-          git diff --staged --quiet || git commit -m "[AUTO] Update built files"
-          git push
+          if [ ! -f dist/main.js ]; then
+            echo "Error: dist/main.js not found after build"
+            exit 1
+          fi
+          echo "✓ Build successful - dist/main.js created"
