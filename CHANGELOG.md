@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- New `cycles` and `project-milestones` commands 🎉 – thanks, [Ryan](https://github.com/ryanrozich)! [PR#7](https://github.com/czottmann/linearis/pull/7)
 - The `issues` commands now include parent and child issue relationships <!-- ZCO-1574, ZCO-1586 -->
   - `parentIssue` field with `{ id, identifier, title }` for parent issue (if exists)
   - `subIssues` array with `{ id, identifier, title }` for immediate child issues
