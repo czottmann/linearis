@@ -134,7 +134,7 @@ linearis issues list -l 5 | jq '.[] | .identifier + ": " + .title'
 
 ```bash
 # Install from GitHub (requires --install-links flag)
-npm install -g --install-links czottmann/linearis
+npm install -g --install-links czottmann/linearis#2025.11.2
 
 # Development setup
 git clone <repository> && cd linearis
