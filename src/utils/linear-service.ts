@@ -8,9 +8,17 @@ import {
   LinearProject,
 } from "./linear-types.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier } from "./identifier-parser.js";
+import { multipleMatchesError, notFoundError } from "./error-messages.js";
+
+// Default pagination limit for Linear SDK queries to avoid complexity errors
+const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 
 /**
  * Generic ID resolver that handles UUID validation and passthrough
+ *
+ * @param input - Input string that may be a UUID or identifier
+ * @returns UUID as-is, or original string for non-UUID inputs
  */
 function resolveId(input: string): string {
   if (isUuid(input)) {
@@ -22,6 +30,10 @@ function resolveId(input: string): string {
 
 /**
  * Build common GraphQL filter for name/key equality searches
+ *
+ * @param field - GraphQL field name
+ * @param value - Value to match exactly
+ * @returns GraphQL filter object
  */
 function buildEqualityFilter(field: string, value: string): any {
   return {
@@ -31,6 +43,12 @@ function buildEqualityFilter(field: string, value: string): any {
 
 /**
  * Execute a Linear client query and handle "not found" errors consistently
+ *
+ * @param queryFn - Function that returns a promise with nodes array
+ * @param entityName - Human-readable entity name for error messages
+ * @param identifier - The identifier used in the query
+ * @returns The first node from the result
+ * @throws Error if no nodes are found
  */
 async function executeLinearQuery<T>(
   queryFn: () => Promise<{ nodes: T[] }>,
@@ -44,15 +62,46 @@ async function executeLinearQuery<T>(
   return result.nodes[0];
 }
 
+/**
+ * Linear SDK service with smart ID resolution and optimized operations
+ *
+ * Provides fallback operations and comprehensive ID resolution for Linear entities.
+ * This service handles human-friendly identifiers (TEAM-123, project names, etc.)
+ * and resolves them to Linear UUIDs for API operations.
+ *
+ * Features:
+ * - Smart ID resolution for teams, projects, labels, and issues
+ * - Fallback operations when GraphQL optimizations aren't available
+ * - Consistent error handling and messaging
+ * - Batch operations where possible
+ */
 export class LinearService {
   private client: LinearClient;
 
+  /**
+   * Initialize Linear service with authentication
+   *
+   * @param apiToken - Linear API token for authentication
+   */
   constructor(apiToken: string) {
     this.client = new LinearClient({ apiKey: apiToken });
   }
 
   /**
    * Resolve issue identifier to UUID (lightweight version for ID-only resolution)
+   *
+   * @param issueId - Either a UUID string or TEAM-123 format identifier
+   * @returns The resolved UUID string
+   * @throws Error if the issue identifier format is invalid or issue not found
+   *
+   * @example
+   * ```typescript
+   * // Using UUID
+   * const uuid1 = await resolveIssueId("123e4567-e89b-12d3-a456-426614174000");
+   *
+   * // Using TEAM-123 format
+   * const uuid2 = await resolveIssueId("ABC-123");
+   * ```
    */
   async resolveIssueId(issueId: string): Promise<string> {
     // Return UUID as-is
@@ -61,19 +110,7 @@ export class LinearService {
     }
 
     // Parse identifier (ABC-123 format) and resolve to UUID
-    const parts = issueId.split("-");
-    if (parts.length !== 2) {
-      throw new Error(
-        `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
-      );
-    }
-
-    const teamKey = parts[0];
-    const issueNumber = parseInt(parts[1]);
-
-    if (isNaN(issueNumber)) {
-      throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-    }
+    const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
 
     const issues = await this.client.issues({
       filter: {
@@ -128,9 +165,16 @@ export class LinearService {
           name: lead.name,
         }
         : undefined,
-      targetDate: project.targetDate?.toISOString(),
-      createdAt: project.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: project.updatedAt?.toISOString() || new Date().toISOString(),
+      // Convert date objects to ISO 8601 strings for JSON serialization
+      targetDate: project.targetDate
+        ? new Date(project.targetDate).toISOString()
+        : undefined,
+      createdAt: project.createdAt
+        ? new Date(project.createdAt).toISOString()
+        : new Date().toISOString(),
+      updatedAt: project.updatedAt
+        ? new Date(project.updatedAt).toISOString()
+        : new Date().toISOString(),
     }));
   }
 
@@ -332,6 +376,264 @@ export class LinearService {
       createdAt: comment.createdAt.toISOString(),
       updatedAt: comment.updatedAt.toISOString(),
     };
+  }
+
+  /**
+   * Get all cycles with automatic pagination
+   *
+   * @param teamFilter - Optional team key, name, or ID to filter cycles
+   * @param activeOnly - If true, return only active cycles
+   * @returns Array of cycles with team information
+   *
+   * @remarks
+   * Uses Linear SDK automatic pagination with 250 cycles per request.
+   * This method will make multiple API calls if necessary to fetch all
+   * matching cycles.
+   *
+   * For workspaces with hundreds of cycles, consider using team filtering
+   * to reduce result set size and improve performance.
+   */
+  async getCycles(teamFilter?: string, activeOnly?: boolean): Promise<any[]> {
+    const filter: any = {};
+
+    if (teamFilter) {
+      const teamId = await this.resolveTeamId(teamFilter);
+      filter.team = { id: { eq: teamId } };
+    }
+
+    if (activeOnly) {
+      filter.isActive = { eq: true };
+    }
+
+    const cyclesConnection = await this.client.cycles({
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      orderBy: "createdAt" as any,
+      first: DEFAULT_CYCLE_PAGINATION_LIMIT,
+    });
+
+    // Fetch all relationships in parallel for all cycles
+    // Note: Uses Promise.all - entire operation fails if any team fetch fails.
+    // This ensures data consistency (all cycles have team data or none do).
+    // If partial failures are acceptable, use Promise.allSettled instead.
+    const cyclesWithData = await Promise.all(
+      cyclesConnection.nodes.map(async (cycle) => {
+        const team = await cycle.team;
+        return {
+          id: cycle.id,
+          name: cycle.name,
+          number: cycle.number,
+          // Convert date objects to ISO 8601 strings for JSON serialization
+          startsAt: cycle.startsAt
+            ? new Date(cycle.startsAt).toISOString()
+            : undefined,
+          endsAt: cycle.endsAt
+            ? new Date(cycle.endsAt).toISOString()
+            : undefined,
+          isActive: cycle.isActive,
+          isPrevious: cycle.isPrevious,
+          isNext: cycle.isNext,
+          progress: cycle.progress,
+          issueCountHistory: cycle.issueCountHistory,
+          team: team
+            ? {
+              id: team.id,
+              key: team.key,
+              name: team.name,
+            }
+            : undefined,
+        };
+      }),
+    );
+
+    return cyclesWithData;
+  }
+
+  /**
+   * Get single cycle by ID with issues
+   *
+   * @param cycleId - Cycle UUID
+   * @param issuesLimit - Maximum issues to fetch (default 50)
+   * @returns Cycle with issues
+   *
+   * @remarks
+   * This method does not paginate issues. If a cycle has more issues than
+   * the limit, only the first N will be returned sorted by creation date.
+   *
+   * Linear API limits single requests to 250 items. Values above 250 may
+   * result in errors or truncation.
+   *
+   * To get all issues in a large cycle, either:
+   * 1. Increase the limit (up to 250)
+   * 2. Fetch issues separately using the issues API with pagination
+   * 3. Make multiple requests with cursor-based pagination
+   */
+  async getCycleById(cycleId: string, issuesLimit: number = 50): Promise<any> {
+    const cycle = await this.client.cycle(cycleId);
+
+    const [team, issuesConnection] = await Promise.all([
+      cycle.team,
+      cycle.issues({ first: issuesLimit }),
+    ]);
+
+    const issues = [];
+    for (const issue of issuesConnection.nodes) {
+      const [state, assignee, issueTeam, project, labels] = await Promise.all([
+        issue.state,
+        issue.assignee,
+        issue.team,
+        issue.project,
+        issue.labels(),
+      ]);
+
+      issues.push({
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        description: issue.description || undefined,
+        priority: issue.priority,
+        estimate: issue.estimate || undefined,
+        state: state ? { id: state.id, name: state.name } : undefined,
+        assignee: assignee
+          ? { id: assignee.id, name: assignee.name }
+          : undefined,
+        team: issueTeam
+          ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name }
+          : undefined,
+        project: project ? { id: project.id, name: project.name } : undefined,
+        labels: labels.nodes.map((label: any) => ({
+          id: label.id,
+          name: label.name,
+        })),
+        createdAt: issue.createdAt
+          ? new Date(issue.createdAt).toISOString()
+          : new Date().toISOString(),
+        updatedAt: issue.updatedAt
+          ? new Date(issue.updatedAt).toISOString()
+          : new Date().toISOString(),
+      });
+    }
+
+    return {
+      id: cycle.id,
+      name: cycle.name,
+      number: cycle.number,
+      // Convert date objects to ISO 8601 strings for JSON serialization
+      startsAt: cycle.startsAt
+        ? new Date(cycle.startsAt).toISOString()
+        : undefined,
+      endsAt: cycle.endsAt ? new Date(cycle.endsAt).toISOString() : undefined,
+      isActive: cycle.isActive,
+      progress: cycle.progress,
+      issueCountHistory: cycle.issueCountHistory,
+      team: team
+        ? {
+          id: team.id,
+          key: team.key,
+          name: team.name,
+        }
+        : undefined,
+      issues,
+    };
+  }
+
+  /**
+   * Resolve cycle by name or ID
+   */
+  async resolveCycleId(
+    cycleNameOrId: string,
+    teamFilter?: string,
+  ): Promise<string> {
+    // Return UUID as-is
+    if (isUuid(cycleNameOrId)) {
+      return cycleNameOrId;
+    }
+
+    // Build filter for name-based lookup
+    const filter: any = {
+      name: { eq: cycleNameOrId },
+    };
+
+    // If teamId is provided, filter by team
+    if (teamFilter) {
+      const teamId = await this.resolveTeamId(teamFilter);
+      filter.team = { id: { eq: teamId } };
+    }
+
+    const cyclesConnection = await this.client.cycles({
+      filter,
+      first: 10,
+    });
+
+    const cyclesData = cyclesConnection.nodes;
+
+    const nodes = [];
+    for (const cycle of cyclesData) {
+      const team = await cycle.team;
+      nodes.push({
+        id: cycle.id,
+        name: cycle.name,
+        number: cycle.number,
+        startsAt: cycle.startsAt
+          ? new Date(cycle.startsAt).toISOString()
+          : undefined,
+        isActive: cycle.isActive,
+        isNext: cycle.isNext,
+        isPrevious: cycle.isPrevious,
+        team: team
+          ? { id: team.id, key: team.key, name: team.name }
+          : undefined,
+      });
+    }
+
+    if (nodes.length === 0) {
+      throw notFoundError(
+        "Cycle",
+        cycleNameOrId,
+        teamFilter ? `for team ${teamFilter}` : undefined,
+      );
+    }
+
+    // Disambiguate: prefer active, then next, then previous
+    let chosen = nodes.find((n: any) => n.isActive);
+    if (!chosen) chosen = nodes.find((n: any) => n.isNext);
+    if (!chosen) chosen = nodes.find((n: any) => n.isPrevious);
+    if (!chosen && nodes.length === 1) chosen = nodes[0];
+
+    if (!chosen) {
+      const matches = nodes.map((n: any) =>
+        `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`
+      );
+      throw multipleMatchesError(
+        "cycle",
+        cycleNameOrId,
+        matches,
+        "use an ID or scope with --team",
+      );
+    }
+
+    return chosen.id;
+  }
+
+  /**
+   * Resolve project identifier to UUID
+   *
+   * @param projectNameOrId - Project name or UUID
+   * @returns Project UUID
+   * @throws Error if project not found
+   */
+  async resolveProjectId(projectNameOrId: string): Promise<string> {
+    if (isUuid(projectNameOrId)) {
+      return projectNameOrId;
+    }
+
+    const filter = buildEqualityFilter("name", projectNameOrId);
+    const projectsConnection = await this.client.projects({ filter, first: 1 });
+
+    if (projectsConnection.nodes.length === 0) {
+      throw new Error(`Project "${projectNameOrId}" not found`);
+    }
+
+    return projectsConnection.nodes[0].id;
   }
 }
 

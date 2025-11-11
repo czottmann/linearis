@@ -1,20 +1,27 @@
+function stripCodeContexts(content) {
+    let cleaned = content.replace(/\\`/g, "");
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, "");
+    cleaned = cleaned.replace(/`[^`]+`/g, "");
+    return cleaned;
+}
 export function extractEmbeds(content) {
     if (!content) {
         return [];
     }
+    const cleanedContent = stripCodeContexts(content);
     const embeds = [];
     const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     const linkRegex = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g;
     const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
     let match;
-    while ((match = imageRegex.exec(content)) !== null) {
+    while ((match = imageRegex.exec(cleanedContent)) !== null) {
         const label = match[1] || "file";
         const url = match[2];
         if (isLinearUploadUrl(url)) {
             embeds.push({ label, url, expiresAt });
         }
     }
-    while ((match = linkRegex.exec(content)) !== null) {
+    while ((match = linkRegex.exec(cleanedContent)) !== null) {
         const label = match[1] || "file";
         const url = match[2];
         if (isLinearUploadUrl(url)) {

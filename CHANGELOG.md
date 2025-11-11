@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025.11.2] - TODO-TO-DO
+
+### Added
+
+- New `cycles` and `project-milestones` commands 🎉 – thanks, [Ryan](https://github.com/ryanrozich)! [PR#7](https://github.com/czottmann/linearis/pull/7)
+- The `issues` commands now include parent and child issue relationships <!-- ZCO-1574, ZCO-1586 -->
+  - `parentIssue` field with `{ id, identifier, title }` for parent issue (if exists)
+  - `subIssues` array with `{ id, identifier, title }` for immediate child issues
+  - Available in all issue commands: `read`, `list`, and `search`
+
+### Changed
+
+- Under-the-hood stability bug fixes.
+
+### Fixed
+
+- `issues` commands' embed parser now correctly ignores markdown URLs inside code blocks and inline code <!-- ZCO-1587 -->
+  - Previously extracted URLs from code examples and documentation
+  - Ensures only actual embedded files are detected, not code examples
+
 ## [2025.11.1] - 2025-11-06
 
 ### Added
@@ -41,6 +61,7 @@ All notable changes to this project will be documented in this file. The format 
 
 - Initial release of Linearis CLI tool
 
+[2025.11.1]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
 [2025.11.1]: https://github.com/czottmann/linearis/compare/1.1.0...2025.11.1
 [1.1.0]: https://github.com/czottmann/linearis/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/czottmann/linearis/releases/tag/1.0.0

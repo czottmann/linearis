@@ -1,6 +1,7 @@
 import { BATCH_RESOLVE_FOR_CREATE_QUERY, BATCH_RESOLVE_FOR_SEARCH_QUERY, BATCH_RESOLVE_FOR_UPDATE_QUERY, CREATE_ISSUE_MUTATION, FILTERED_SEARCH_ISSUES_QUERY, GET_ISSUE_BY_ID_QUERY, GET_ISSUE_BY_IDENTIFIER_QUERY, GET_ISSUES_QUERY, SEARCH_ISSUES_QUERY, UPDATE_ISSUE_MUTATION, } from "../queries/issues.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier, tryParseIssueIdentifier, } from "./identifier-parser.js";
 export class GraphQLIssuesService {
     graphQLService;
     linearService;
@@ -30,15 +31,7 @@ export class GraphQLIssuesService {
             issueData = result.issue;
         }
         else {
-            const parts = issueId.split("-");
-            if (parts.length !== 2) {
-                throw new Error(`Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`);
-            }
-            const teamKey = parts[0];
-            const issueNumber = parseInt(parts[1]);
-            if (isNaN(issueNumber)) {
-                throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-            }
+            const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
             const result = await this.graphQLService.rawRequest(GET_ISSUE_BY_IDENTIFIER_QUERY, {
                 teamKey,
                 number: issueNumber,
@@ -55,15 +48,9 @@ export class GraphQLIssuesService {
         let currentIssueLabels = [];
         const resolveVariables = {};
         if (!isUuid(args.id)) {
-            const parts = args.id.split("-");
-            if (parts.length !== 2) {
-                throw new Error(`Invalid issue identifier format: "${args.id}". Expected format: TEAM-123`);
-            }
-            resolveVariables.teamKey = parts[0];
-            resolveVariables.issueNumber = parseInt(parts[1]);
-            if (isNaN(resolveVariables.issueNumber)) {
-                throw new Error(`Invalid issue number in identifier: "${args.id}"`);
-            }
+            const { teamKey, issueNumber } = parseIssueIdentifier(args.id);
+            resolveVariables.teamKey = teamKey;
+            resolveVariables.issueNumber = issueNumber;
         }
         if (args.labelIds && Array.isArray(args.labelIds)) {
             const labelNames = args.labelIds.filter((id) => !isUuid(id));
@@ -73,6 +60,10 @@ export class GraphQLIssuesService {
         }
         if (args.projectId && !isUuid(args.projectId)) {
             resolveVariables.projectName = args.projectId;
+        }
+        if (args.milestoneId && typeof args.milestoneId === "string" &&
+            !isUuid(args.milestoneId)) {
+            resolveVariables.milestoneName = args.milestoneId;
         }
         const resolveResult = await this.graphQLService.rawRequest(BATCH_RESOLVE_FOR_UPDATE_QUERY, resolveVariables);
         if (!isUuid(args.id)) {
@@ -113,6 +104,85 @@ export class GraphQLIssuesService {
             }
             finalProjectId = resolveResult.projects.nodes[0].id;
         }
+        let finalMilestoneId = args.milestoneId;
+        if (args.milestoneId && typeof args.milestoneId === "string" &&
+            !isUuid(args.milestoneId)) {
+            if (args.projectId &&
+                resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
+                const projectMilestone = resolveResult.projects.nodes[0]
+                    .projectMilestones.nodes
+                    .find((m) => m.name === args.milestoneId);
+                if (projectMilestone) {
+                    finalMilestoneId = projectMilestone.id;
+                }
+            }
+            if (finalMilestoneId && !isUuid(finalMilestoneId) &&
+                resolveResult.issues?.nodes[0]?.project?.projectMilestones?.nodes) {
+                const issueMilestone = resolveResult.issues.nodes[0].project
+                    .projectMilestones.nodes
+                    .find((m) => m.name === args.milestoneId);
+                if (issueMilestone) {
+                    finalMilestoneId = issueMilestone.id;
+                }
+            }
+            if (finalMilestoneId && !isUuid(finalMilestoneId) &&
+                resolveResult.milestones?.nodes?.length) {
+                finalMilestoneId = resolveResult.milestones.nodes[0].id;
+            }
+            if (!finalMilestoneId || !isUuid(finalMilestoneId)) {
+                throw new Error(`Milestone "${args.milestoneId}" not found`);
+            }
+        }
+        let finalCycleId = args.cycleId;
+        if (args.cycleId !== undefined && args.cycleId !== null) {
+            if (args.cycleId === null) {
+                finalCycleId = null;
+            }
+            else if (typeof args.cycleId === "string" && !isUuid(args.cycleId)) {
+                let teamIdForCycle = resolveResult.issues?.nodes?.[0]?.team?.id;
+                if (!teamIdForCycle && resolvedIssueId && isUuid(resolvedIssueId)) {
+                    const issueTeamRes = await this.graphQLService.rawRequest(`query GetIssueTeam($issueId: String!) { issue(id: $issueId) { team { id } } }`, { issueId: resolvedIssueId });
+                    teamIdForCycle = issueTeamRes.issue?.team?.id;
+                }
+                if (teamIdForCycle) {
+                    const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId, teamId: teamIdForCycle });
+                    const scopedNodes = scopedRes.cycles?.nodes || [];
+                    if (scopedNodes.length === 1) {
+                        finalCycleId = scopedNodes[0].id;
+                    }
+                    else if (scopedNodes.length > 1) {
+                        let chosen = scopedNodes.find((n) => n.isActive) ||
+                            scopedNodes.find((n) => n.isNext) ||
+                            scopedNodes.find((n) => n.isPrevious);
+                        if (chosen)
+                            finalCycleId = chosen.id;
+                        else {
+                            throw new Error(`Ambiguous cycle name "${args.cycleId}" for team ${teamIdForCycle}. Use ID or disambiguate.`);
+                        }
+                    }
+                }
+                if (!finalCycleId) {
+                    const globalRes = await this.graphQLService.rawRequest(`query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`, { name: args.cycleId });
+                    const globalNodes = globalRes.cycles?.nodes || [];
+                    if (globalNodes.length === 1) {
+                        finalCycleId = globalNodes[0].id;
+                    }
+                    else if (globalNodes.length > 1) {
+                        let chosen = globalNodes.find((n) => n.isActive) ||
+                            globalNodes.find((n) => n.isNext) ||
+                            globalNodes.find((n) => n.isPrevious);
+                        if (chosen)
+                            finalCycleId = chosen.id;
+                        else {
+                            throw new Error(`Ambiguous cycle name "${args.cycleId}" — multiple matches found across teams. Use ID or scope with team.`);
+                        }
+                    }
+                }
+                if (!finalCycleId) {
+                    throw new Error(`Cycle "${args.cycleId}" not found`);
+                }
+            }
+        }
         let resolvedStateId = args.stateId;
         if (args.stateId && !isUuid(args.stateId)) {
             let teamId;
@@ -141,10 +211,15 @@ export class GraphQLIssuesService {
         }
         if (finalProjectId !== undefined)
             updateInput.projectId = finalProjectId;
+        if (finalCycleId !== undefined)
+            updateInput.cycleId = finalCycleId;
         if (args.estimate !== undefined)
             updateInput.estimate = args.estimate;
         if (args.parentId !== undefined)
             updateInput.parentId = args.parentId;
+        if (finalMilestoneId !== undefined) {
+            updateInput.projectMilestoneId = finalMilestoneId;
+        }
         if (finalLabelIds !== undefined) {
             updateInput.labelIds = finalLabelIds;
         }
@@ -173,6 +248,9 @@ export class GraphQLIssuesService {
         if (args.projectId && !isUuid(args.projectId)) {
             resolveVariables.projectName = args.projectId;
         }
+        if (args.milestoneId && !isUuid(args.milestoneId)) {
+            resolveVariables.milestoneName = args.milestoneId;
+        }
         if (args.labelIds && Array.isArray(args.labelIds)) {
             const labelNames = args.labelIds.filter((id) => !isUuid(id));
             if (labelNames.length > 0) {
@@ -180,14 +258,10 @@ export class GraphQLIssuesService {
             }
         }
         if (args.parentId && !isUuid(args.parentId)) {
-            const parts = args.parentId.split("-");
-            if (parts.length === 2) {
-                const teamKey = parts[0];
-                const issueNumber = parseInt(parts[1]);
-                if (!isNaN(issueNumber)) {
-                    resolveVariables.parentTeamKey = teamKey;
-                    resolveVariables.parentIssueNumber = issueNumber;
-                }
+            const parentParsed = tryParseIssueIdentifier(args.parentId);
+            if (parentParsed) {
+                resolveVariables.parentTeamKey = parentParsed.teamKey;
+                resolveVariables.parentIssueNumber = parentParsed.issueNumber;
             }
         }
         let resolveResult = {};
@@ -234,6 +308,44 @@ export class GraphQLIssuesService {
             }
             finalParentId = resolveResult.parentIssues.nodes[0].id;
         }
+        let finalMilestoneId = args.milestoneId;
+        if (args.milestoneId && !isUuid(args.milestoneId)) {
+            if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
+                const projectMilestone = resolveResult.projects.nodes[0]
+                    .projectMilestones.nodes
+                    .find((m) => m.name === args.milestoneId);
+                if (projectMilestone) {
+                    finalMilestoneId = projectMilestone.id;
+                }
+            }
+            if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
+                finalMilestoneId = resolveResult.milestones.nodes[0].id;
+            }
+            if (!finalMilestoneId) {
+                const hint = finalProjectId
+                    ? ` in project`
+                    : ` (consider specifying --project)`;
+                throw new Error(`Milestone "${args.milestoneId}" not found${hint}`);
+            }
+        }
+        let finalCycleId = args.cycleId;
+        if (args.cycleId && typeof args.cycleId === "string" && !isUuid(args.cycleId)) {
+            if (finalTeamId) {
+                const scopedRes = await this.graphQLService.rawRequest(`query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 1) { nodes { id name } } }`, { name: args.cycleId, teamId: finalTeamId });
+                if (scopedRes.cycles?.nodes?.length) {
+                    finalCycleId = scopedRes.cycles.nodes[0].id;
+                }
+            }
+            if (!finalCycleId) {
+                const globalRes = await this.graphQLService.rawRequest(`query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`, { name: args.cycleId });
+                if (globalRes.cycles?.nodes?.length) {
+                    finalCycleId = globalRes.cycles.nodes[0].id;
+                }
+            }
+            if (!finalCycleId) {
+                throw new Error(`Cycle "${args.cycleId}" not found`);
+            }
+        }
         let resolvedStateId = args.stateId;
         if (args.stateId && !isUuid(args.stateId)) {
             resolvedStateId = await this.linearService.resolveStateId(args.stateId, finalTeamId);
@@ -260,8 +372,10 @@ export class GraphQLIssuesService {
             createInput.estimate = args.estimate;
         if (finalParentId)
             createInput.parentId = finalParentId;
-        if (args.milestoneId)
-            createInput.projectMilestoneId = args.milestoneId;
+        if (finalMilestoneId)
+            createInput.projectMilestoneId = finalMilestoneId;
+        if (finalCycleId)
+            createInput.cycleId = finalCycleId;
         const createResult = await this.graphQLService.rawRequest(CREATE_ISSUE_MUTATION, {
             input: createInput,
         });
@@ -394,12 +508,38 @@ export class GraphQLIssuesService {
                     name: issue.project.name,
                 }
                 : undefined,
+            cycle: issue.cycle
+                ? {
+                    id: issue.cycle.id,
+                    name: issue.cycle.name,
+                    number: issue.cycle.number,
+                }
+                : undefined,
+            projectMilestone: issue.projectMilestone
+                ? {
+                    id: issue.projectMilestone.id,
+                    name: issue.projectMilestone.name,
+                    targetDate: issue.projectMilestone.targetDate || undefined,
+                }
+                : undefined,
             priority: issue.priority,
             estimate: issue.estimate || undefined,
             labels: issue.labels.nodes.map((label) => ({
                 id: label.id,
                 name: label.name,
             })),
+            parentIssue: issue.parent
+                ? {
+                    id: issue.parent.id,
+                    identifier: issue.parent.identifier,
+                    title: issue.parent.title,
+                }
+                : undefined,
+            subIssues: issue.children?.nodes.map((child) => ({
+                id: child.id,
+                identifier: child.identifier,
+                title: child.title,
+            })) || undefined,
             comments: issue.comments?.nodes.map((comment) => ({
                 id: comment.id,
                 body: comment.body,

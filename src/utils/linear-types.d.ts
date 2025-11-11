@@ -25,11 +25,31 @@ export interface LinearIssue {
     id: string;
     name: string;
   };
+  cycle?: {
+    id: string;
+    name: string;
+    number: number;
+  };
+  projectMilestone?: {
+    id: string;
+    name: string;
+    targetDate?: string;
+  };
   priority: number;
   estimate?: number;
   labels: Array<{
     id: string;
     name: string;
+  }>;
+  parentIssue?: {
+    id: string;
+    identifier: string;
+    title: string;
+  };
+  subIssues?: Array<{
+    id: string;
+    identifier: string;
+    title: string;
   }>;
   comments?: Array<{
     id: string;
@@ -82,6 +102,7 @@ export interface CreateIssueArgs {
   estimate?: number;
   parentId?: string;
   milestoneId?: string;
+  cycleId?: string;
 }
 
 export interface UpdateIssueArgs {
@@ -95,6 +116,8 @@ export interface UpdateIssueArgs {
   labelIds?: string[];
   estimate?: number;
   parentId?: string;
+  milestoneId?: string | null;
+  cycleId?: string | null;
 }
 
 export interface SearchIssuesArgs {
@@ -135,4 +158,105 @@ export interface LinearComment {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LinearProjectMilestone {
+  id: string;
+  name: string;
+  description?: string;
+  targetDate?: string;
+  sortOrder?: number;
+  createdAt: string;
+  updatedAt: string;
+  project?: {
+    id: string;
+    name: string;
+  };
+  issues?: LinearIssue[];
+}
+
+export interface LinearProjectMilestoneWithIssues
+  extends LinearProjectMilestone {
+  issues: LinearIssue[];
+}
+
+export interface ListProjectMilestonesArgs {
+  projectId: string; // Project name or UUID (will be resolved)
+  limit?: number;
+}
+
+export interface GetProjectMilestoneArgs {
+  milestoneId: string; // Milestone name or UUID (will be resolved)
+  projectId?: string; // Optional project context for name resolution
+  issuesFirst?: number; // How many issues to fetch
+}
+
+export interface CreateProjectMilestoneArgs {
+  name: string;
+  projectId: string; // Project name or UUID (will be resolved)
+  description?: string;
+  targetDate?: string; // ISO date string
+}
+
+export interface UpdateProjectMilestoneArgs {
+  id: string; // Milestone ID or name (will be resolved)
+  projectId?: string; // Optional project context for name resolution
+  name?: string;
+  description?: string;
+  targetDate?: string; // ISO date string
+  sortOrder?: number;
+}
+
+export interface LinearCycle {
+  id: string;
+  name: string;
+  number: number;
+  startsAt?: string;
+  endsAt?: string;
+  isActive: boolean;
+  isPrevious?: boolean;
+  isNext?: boolean;
+  progress: number;
+  issueCountHistory: number[];
+  team?: {
+    id: string;
+    key: string;
+    name: string;
+  };
+  issues?: LinearIssue[];
+}
+
+export interface CycleListOptions {
+  team?: string;
+  active?: boolean;
+  aroundActive?: string;
+}
+
+export interface CycleReadOptions {
+  team?: string;
+  issuesFirst?: string;
+}
+
+export interface MilestoneListOptions {
+  project: string;
+  limit?: string;
+}
+
+export interface MilestoneReadOptions {
+  project?: string;
+  issuesFirst?: string;
+}
+
+export interface MilestoneCreateOptions {
+  project: string;
+  description?: string;
+  targetDate?: string;
+}
+
+export interface MilestoneUpdateOptions {
+  project?: string;
+  name?: string;
+  description?: string;
+  targetDate?: string;
+  sortOrder?: string;
 }

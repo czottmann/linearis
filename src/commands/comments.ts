@@ -4,7 +4,19 @@ import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
  * Setup comments commands on the program
- * @param program - Commander.js program instance
+ * 
+ * Registers the `comments` command group and its subcommands for managing
+ * Linear issue comments. Provides create operations for adding comments
+ * to issues with smart ID resolution.
+ * 
+ * @param program - Commander.js program instance to register commands on
+ * 
+ * @example
+ * ```typescript
+ * // In main.ts
+ * setupCommentsCommands(program);
+ * // Enables: linearis comments create ABC-123 --body "My comment"
+ * ```
  */
 export function setupCommentsCommands(program: Command): void {
   const comments = program.command("comments")
@@ -15,6 +27,14 @@ export function setupCommentsCommands(program: Command): void {
     comments.help();
   });
 
+  /**
+   * Create new comment on issue
+   * 
+   * Command: `linearis comments create <issueId> --body <comment>`
+   * 
+   * Supports both UUID and TEAM-123 format issue identifiers.
+   * Resolves identifiers to UUIDs before creating the comment.
+   */
   comments.command("create <issueId>")
     .description("Create new comment on issue.")
     .addHelpText('after', `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`)
@@ -22,6 +42,7 @@ export function setupCommentsCommands(program: Command): void {
     .action(
       handleAsyncCommand(
         async (issueId: string, options: any, command: Command) => {
+          // Initialize Linear service with authentication
           const service = await createLinearService(
             command.parent!.parent!.opts(),
           );
@@ -31,9 +52,10 @@ export function setupCommentsCommands(program: Command): void {
             throw new Error("--body is required");
           }
 
-          // Resolve issue ID if it's an identifier
+          // Resolve issue ID if it's an identifier (TEAM-123 -> UUID)
           const resolvedIssueId = await service.resolveIssueId(issueId);
 
+          // Create comment using Linear SDK
           const result = await service.createComment({
             issueId: resolvedIssueId,
             body: options.body,

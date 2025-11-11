@@ -20,6 +20,10 @@ import type {
 } from "./linear-types.js";
 import { extractEmbeds } from "./embed-parser.js";
 import { isUuid } from "./uuid.js";
+import {
+  parseIssueIdentifier,
+  tryParseIssueIdentifier,
+} from "./identifier-parser.js";
 
 /**
  * GraphQL-optimized issues service for single API call operations
@@ -53,6 +57,19 @@ export class GraphQLIssuesService {
   /**
    * Get issue by ID with all relationships and comments in single query
    * Reduces from 7 API calls to 1 API call
+   *
+   * @param issueId - Either a UUID string or TEAM-123 format identifier
+   * @returns Complete issue data with all relationships resolved
+   * @throws Error if issue is not found
+   *
+   * @example
+   * ```typescript
+   * // Using UUID
+   * const issue1 = await getIssueById("123e4567-e89b-12d3-a456-426614174000");
+   *
+   * // Using TEAM-123 format
+   * const issue2 = await getIssueById("ABC-123");
+   * ```
    */
   async getIssueById(issueId: string): Promise<LinearIssue> {
     let issueData;
@@ -72,19 +89,7 @@ export class GraphQLIssuesService {
       issueData = result.issue;
     } else {
       // Parse identifier (ABC-123 format)
-      const parts = issueId.split("-");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`,
-        );
-      }
-
-      const teamKey = parts[0];
-      const issueNumber = parseInt(parts[1]);
-
-      if (isNaN(issueNumber)) {
-        throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-      }
+      const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
 
       const result = await this.graphQLService.rawRequest(
         GET_ISSUE_BY_IDENTIFIER_QUERY,
@@ -110,6 +115,19 @@ export class GraphQLIssuesService {
    *
    * @param args Update arguments (supports label names and handles adding vs overwriting modes)
    * @param labelMode How to handle labels: 'adding' (merge with existing) or 'overwriting' (replace all)
+   * @returns Updated issue with all relationships resolved
+   *
+   * @example
+   * ```typescript
+   * const updatedIssue = await updateIssue(
+   *   {
+   *     id: "ABC-123",
+   *     title: "New Title",
+   *     labels: ["Bug", "High Priority"]
+   *   },
+   *   "adding"
+   * );
+   * ```
    */
   async updateIssue(
     args: UpdateIssueArgs,
@@ -123,18 +141,9 @@ export class GraphQLIssuesService {
 
     // Parse issue ID if it's an identifier
     if (!isUuid(args.id)) {
-      const parts = args.id.split("-");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid issue identifier format: "${args.id}". Expected format: TEAM-123`,
-        );
-      }
-      resolveVariables.teamKey = parts[0];
-      resolveVariables.issueNumber = parseInt(parts[1]);
-
-      if (isNaN(resolveVariables.issueNumber)) {
-        throw new Error(`Invalid issue number in identifier: "${args.id}"`);
-      }
+      const { teamKey, issueNumber } = parseIssueIdentifier(args.id);
+      resolveVariables.teamKey = teamKey;
+      resolveVariables.issueNumber = issueNumber;
     }
 
     // Add label names for resolution if provided
@@ -149,6 +158,14 @@ export class GraphQLIssuesService {
     // Add project name for resolution if provided and not a UUID
     if (args.projectId && !isUuid(args.projectId)) {
       resolveVariables.projectName = args.projectId;
+    }
+
+    // Add milestone name for resolution if provided and not a UUID
+    if (
+      args.milestoneId && typeof args.milestoneId === "string" &&
+      !isUuid(args.milestoneId)
+    ) {
+      resolveVariables.milestoneName = args.milestoneId;
     }
 
     // Execute batch resolve query
@@ -210,6 +227,119 @@ export class GraphQLIssuesService {
       finalProjectId = resolveResult.projects.nodes[0].id;
     }
 
+    // Resolve milestone ID if provided and not a UUID
+    let finalMilestoneId = args.milestoneId;
+    if (
+      args.milestoneId && typeof args.milestoneId === "string" &&
+      !isUuid(args.milestoneId)
+    ) {
+      // First try to find milestone in project being set (if --project is provided)
+      // IMPORTANT: Only check resolveResult.projects if we actually asked for a project
+      // (the batch query may return unrelated project data when projectName is undefined)
+      if (
+        args.projectId &&
+        resolveResult.projects?.nodes[0]?.projectMilestones?.nodes
+      ) {
+        const projectMilestone = resolveResult.projects.nodes[0]
+          .projectMilestones.nodes
+          .find((m: any) => m.name === args.milestoneId);
+        if (projectMilestone) {
+          finalMilestoneId = projectMilestone.id;
+        }
+      }
+
+      // If not found in project being set, try the issue's current project
+      if (
+        finalMilestoneId && !isUuid(finalMilestoneId) &&
+        resolveResult.issues?.nodes[0]?.project?.projectMilestones?.nodes
+      ) {
+        const issueMilestone = resolveResult.issues.nodes[0].project
+          .projectMilestones.nodes
+          .find((m: any) => m.name === args.milestoneId);
+        if (issueMilestone) {
+          finalMilestoneId = issueMilestone.id;
+        }
+      }
+
+      // If still not found, try global milestone lookup (may be ambiguous)
+      if (
+        finalMilestoneId && !isUuid(finalMilestoneId) &&
+        resolveResult.milestones?.nodes?.length
+      ) {
+        finalMilestoneId = resolveResult.milestones.nodes[0].id;
+      }
+
+      if (!finalMilestoneId || !isUuid(finalMilestoneId)) {
+        throw new Error(`Milestone "${args.milestoneId}" not found`);
+      }
+    }
+
+    // Resolve cycle ID if provided (supports name resolution scoped to the issue's team)
+    let finalCycleId = args.cycleId;
+    if (args.cycleId !== undefined && args.cycleId !== null) {
+      if (args.cycleId === null) {
+        finalCycleId = null; // explicit clear
+      } else if (typeof args.cycleId === "string" && !isUuid(args.cycleId)) {
+        // Try to get team context from resolved issue (if available)
+        let teamIdForCycle: string | undefined = resolveResult.issues?.nodes
+          ?.[0]?.team?.id;
+
+        // If we don't have team from batch result but we have resolvedIssueId, fetch issue team
+        if (!teamIdForCycle && resolvedIssueId && isUuid(resolvedIssueId)) {
+          const issueTeamRes = await this.graphQLService.rawRequest(
+            `query GetIssueTeam($issueId: String!) { issue(id: $issueId) { team { id } } }`,
+            { issueId: resolvedIssueId },
+          );
+          teamIdForCycle = issueTeamRes.issue?.team?.id;
+        }
+
+        // Try scoped lookup by team first
+        if (teamIdForCycle) {
+          const scopedRes = await this.graphQLService.rawRequest(
+            `query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`,
+            { name: args.cycleId, teamId: teamIdForCycle },
+          );
+          const scopedNodes = scopedRes.cycles?.nodes || [];
+          if (scopedNodes.length === 1) {
+            finalCycleId = scopedNodes[0].id;
+          } else if (scopedNodes.length > 1) {
+            // prefer active, next, previous
+            let chosen = scopedNodes.find((n: any) => n.isActive) ||
+              scopedNodes.find((n: any) => n.isNext) ||
+              scopedNodes.find((n: any) => n.isPrevious);
+            if (chosen) finalCycleId = chosen.id;
+            else {throw new Error(
+                `Ambiguous cycle name "${args.cycleId}" for team ${teamIdForCycle}. Use ID or disambiguate.`,
+              );}
+          }
+        }
+
+        // Fallback to global lookup by name
+        if (!finalCycleId) {
+          const globalRes = await this.graphQLService.rawRequest(
+            `query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 10) { nodes { id name number startsAt isActive isNext isPrevious team { id key } } } }`,
+            { name: args.cycleId },
+          );
+          const globalNodes = globalRes.cycles?.nodes || [];
+          if (globalNodes.length === 1) {
+            finalCycleId = globalNodes[0].id;
+          } else if (globalNodes.length > 1) {
+            let chosen = globalNodes.find((n: any) => n.isActive) ||
+              globalNodes.find((n: any) => n.isNext) ||
+              globalNodes.find((n: any) => n.isPrevious);
+            if (chosen) finalCycleId = chosen.id;
+            else {throw new Error(
+                `Ambiguous cycle name "${args.cycleId}" — multiple matches found across teams. Use ID or scope with team.`,
+              );}
+          }
+        }
+
+        if (!finalCycleId) {
+          throw new Error(`Cycle "${args.cycleId}" not found`);
+        }
+      }
+    }
+
     // Resolve state ID if provided and not a UUID
     let resolvedStateId = args.stateId;
     if (args.stateId && !isUuid(args.stateId)) {
@@ -246,9 +376,12 @@ export class GraphQLIssuesService {
       updateInput.assigneeId = args.assigneeId;
     }
     if (finalProjectId !== undefined) updateInput.projectId = finalProjectId;
+    if (finalCycleId !== undefined) updateInput.cycleId = finalCycleId;
     if (args.estimate !== undefined) updateInput.estimate = args.estimate;
     if (args.parentId !== undefined) updateInput.parentId = args.parentId;
-
+    if (finalMilestoneId !== undefined) {
+      updateInput.projectMilestoneId = finalMilestoneId;
+    }
     if (finalLabelIds !== undefined) {
       updateInput.labelIds = finalLabelIds;
     }
@@ -297,6 +430,11 @@ export class GraphQLIssuesService {
       resolveVariables.projectName = args.projectId;
     }
 
+    // Add milestone name for resolution if provided and not a UUID
+    if (args.milestoneId && !isUuid(args.milestoneId)) {
+      resolveVariables.milestoneName = args.milestoneId;
+    }
+
     // Add label names for resolution if provided
     if (args.labelIds && Array.isArray(args.labelIds)) {
       // Filter out UUIDs and collect label names for resolution
@@ -307,15 +445,12 @@ export class GraphQLIssuesService {
     }
 
     // Parse parent issue identifier if provided
+    // Uses tryParseIssueIdentifier to silently handle invalid formats (parent will be ignored)
     if (args.parentId && !isUuid(args.parentId)) {
-      const parts = args.parentId.split("-");
-      if (parts.length === 2) {
-        const teamKey = parts[0];
-        const issueNumber = parseInt(parts[1]);
-        if (!isNaN(issueNumber)) {
-          resolveVariables.parentTeamKey = teamKey;
-          resolveVariables.parentIssueNumber = issueNumber;
-        }
+      const parentParsed = tryParseIssueIdentifier(args.parentId);
+      if (parentParsed) {
+        resolveVariables.parentTeamKey = parentParsed.teamKey;
+        resolveVariables.parentIssueNumber = parentParsed.issueNumber;
       }
     }
 
@@ -381,6 +516,64 @@ export class GraphQLIssuesService {
       finalParentId = resolveResult.parentIssues.nodes[0].id;
     }
 
+    // Resolve milestone ID if provided and not a UUID
+    let finalMilestoneId = args.milestoneId;
+    if (args.milestoneId && !isUuid(args.milestoneId)) {
+      // Try to find milestone in project context (milestones must be in same project as issue)
+      if (resolveResult.projects?.nodes[0]?.projectMilestones?.nodes) {
+        const projectMilestone = resolveResult.projects.nodes[0]
+          .projectMilestones.nodes
+          .find((m: any) => m.name === args.milestoneId);
+        if (projectMilestone) {
+          finalMilestoneId = projectMilestone.id;
+        }
+      }
+
+      // If not found in project context, try global milestone lookup (may fail if wrong project)
+      if (!finalMilestoneId && resolveResult.milestones?.nodes?.length) {
+        finalMilestoneId = resolveResult.milestones.nodes[0].id;
+      }
+
+      if (!finalMilestoneId) {
+        const hint = finalProjectId
+          ? ` in project`
+          : ` (consider specifying --project)`;
+        throw new Error(`Milestone "${args.milestoneId}" not found${hint}`);
+      }
+    }
+
+    // Resolve cycle ID if provided (supports name resolution scoped to team)
+    let finalCycleId = args.cycleId;
+    if (
+      args.cycleId && typeof args.cycleId === "string" && !isUuid(args.cycleId)
+    ) {
+      // Try scoped lookup within finalTeamId first
+      if (finalTeamId) {
+        const scopedRes = await this.graphQLService.rawRequest(
+          `query FindCycleScoped($name: String!, $teamId: ID!) { cycles(filter: { and: [ { name: { eq: $name } }, { team: { id: { eq: $teamId } } } ] }, first: 1) { nodes { id name } } }`,
+          { name: args.cycleId, teamId: finalTeamId },
+        );
+        if (scopedRes.cycles?.nodes?.length) {
+          finalCycleId = scopedRes.cycles.nodes[0].id;
+        }
+      }
+
+      // Fallback to global lookup by name
+      if (!finalCycleId) {
+        const globalRes = await this.graphQLService.rawRequest(
+          `query FindCycleGlobal($name: String!) { cycles(filter: { name: { eq: $name } }, first: 1) { nodes { id name } } }`,
+          { name: args.cycleId },
+        );
+        if (globalRes.cycles?.nodes?.length) {
+          finalCycleId = globalRes.cycles.nodes[0].id;
+        }
+      }
+
+      if (!finalCycleId) {
+        throw new Error(`Cycle "${args.cycleId}" not found`);
+      }
+    }
+
     // Resolve state ID if provided and not a UUID
     let resolvedStateId = args.stateId;
     if (args.stateId && !isUuid(args.stateId)) {
@@ -406,7 +599,8 @@ export class GraphQLIssuesService {
     }
     if (args.estimate !== undefined) createInput.estimate = args.estimate;
     if (finalParentId) createInput.parentId = finalParentId;
-    if (args.milestoneId) createInput.projectMilestoneId = args.milestoneId;
+    if (finalMilestoneId) createInput.projectMilestoneId = finalMilestoneId;
+    if (finalCycleId) createInput.cycleId = finalCycleId;
 
     const createResult = await this.graphQLService.rawRequest(
       CREATE_ISSUE_MUTATION,
@@ -603,12 +797,38 @@ export class GraphQLIssuesService {
           name: issue.project.name,
         }
         : undefined,
+      cycle: issue.cycle
+        ? {
+          id: issue.cycle.id,
+          name: issue.cycle.name,
+          number: issue.cycle.number,
+        }
+        : undefined,
+      projectMilestone: issue.projectMilestone
+        ? {
+          id: issue.projectMilestone.id,
+          name: issue.projectMilestone.name,
+          targetDate: issue.projectMilestone.targetDate || undefined,
+        }
+        : undefined,
       priority: issue.priority,
       estimate: issue.estimate || undefined,
       labels: issue.labels.nodes.map((label: any) => ({
         id: label.id,
         name: label.name,
       })),
+      parentIssue: issue.parent
+        ? {
+          id: issue.parent.id,
+          identifier: issue.parent.identifier,
+          title: issue.parent.title,
+        }
+        : undefined,
+      subIssues: issue.children?.nodes.map((child: any) => ({
+        id: child.id,
+        identifier: child.identifier,
+        title: child.title,
+      })) || undefined,
       comments: issue.comments?.nodes.map((comment: any) => ({
         id: comment.id,
         body: comment.body,

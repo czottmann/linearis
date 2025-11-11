@@ -1,6 +1,9 @@
 import { LinearClient } from "@linear/sdk";
 import { getApiToken } from "./auth.js";
 import { isUuid } from "./uuid.js";
+import { parseIssueIdentifier } from "./identifier-parser.js";
+import { multipleMatchesError, notFoundError } from "./error-messages.js";
+const DEFAULT_CYCLE_PAGINATION_LIMIT = 250;
 function resolveId(input) {
     if (isUuid(input)) {
         return input;
@@ -28,15 +31,7 @@ export class LinearService {
         if (isUuid(issueId)) {
             return issueId;
         }
-        const parts = issueId.split("-");
-        if (parts.length !== 2) {
-            throw new Error(`Invalid issue identifier format: "${issueId}". Expected format: TEAM-123`);
-        }
-        const teamKey = parts[0];
-        const issueNumber = parseInt(parts[1]);
-        if (isNaN(issueNumber)) {
-            throw new Error(`Invalid issue number in identifier: "${issueId}"`);
-        }
+        const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
         const issues = await this.client.issues({
             filter: {
                 number: { eq: issueNumber },
@@ -79,9 +74,15 @@ export class LinearService {
                     name: lead.name,
                 }
                 : undefined,
-            targetDate: project.targetDate?.toISOString(),
-            createdAt: project.createdAt?.toISOString() || new Date().toISOString(),
-            updatedAt: project.updatedAt?.toISOString() || new Date().toISOString(),
+            targetDate: project.targetDate
+                ? new Date(project.targetDate).toISOString()
+                : undefined,
+            createdAt: project.createdAt
+                ? new Date(project.createdAt).toISOString()
+                : new Date().toISOString(),
+            updatedAt: project.updatedAt
+                ? new Date(project.updatedAt).toISOString()
+                : new Date().toISOString(),
         }));
     }
     async resolveTeamId(teamKeyOrNameOrId) {
@@ -220,6 +221,172 @@ export class LinearService {
             createdAt: comment.createdAt.toISOString(),
             updatedAt: comment.updatedAt.toISOString(),
         };
+    }
+    async getCycles(teamFilter, activeOnly) {
+        const filter = {};
+        if (teamFilter) {
+            const teamId = await this.resolveTeamId(teamFilter);
+            filter.team = { id: { eq: teamId } };
+        }
+        if (activeOnly) {
+            filter.isActive = { eq: true };
+        }
+        const cyclesConnection = await this.client.cycles({
+            filter: Object.keys(filter).length > 0 ? filter : undefined,
+            orderBy: "createdAt",
+            first: DEFAULT_CYCLE_PAGINATION_LIMIT,
+        });
+        const cyclesWithData = await Promise.all(cyclesConnection.nodes.map(async (cycle) => {
+            const team = await cycle.team;
+            return {
+                id: cycle.id,
+                name: cycle.name,
+                number: cycle.number,
+                startsAt: cycle.startsAt
+                    ? new Date(cycle.startsAt).toISOString()
+                    : undefined,
+                endsAt: cycle.endsAt
+                    ? new Date(cycle.endsAt).toISOString()
+                    : undefined,
+                isActive: cycle.isActive,
+                isPrevious: cycle.isPrevious,
+                isNext: cycle.isNext,
+                progress: cycle.progress,
+                issueCountHistory: cycle.issueCountHistory,
+                team: team
+                    ? {
+                        id: team.id,
+                        key: team.key,
+                        name: team.name,
+                    }
+                    : undefined,
+            };
+        }));
+        return cyclesWithData;
+    }
+    async getCycleById(cycleId, issuesLimit = 50) {
+        const cycle = await this.client.cycle(cycleId);
+        const [team, issuesConnection] = await Promise.all([
+            cycle.team,
+            cycle.issues({ first: issuesLimit }),
+        ]);
+        const issues = [];
+        for (const issue of issuesConnection.nodes) {
+            const [state, assignee, issueTeam, project, labels] = await Promise.all([
+                issue.state,
+                issue.assignee,
+                issue.team,
+                issue.project,
+                issue.labels(),
+            ]);
+            issues.push({
+                id: issue.id,
+                identifier: issue.identifier,
+                title: issue.title,
+                description: issue.description || undefined,
+                priority: issue.priority,
+                estimate: issue.estimate || undefined,
+                state: state ? { id: state.id, name: state.name } : undefined,
+                assignee: assignee
+                    ? { id: assignee.id, name: assignee.name }
+                    : undefined,
+                team: issueTeam
+                    ? { id: issueTeam.id, key: issueTeam.key, name: issueTeam.name }
+                    : undefined,
+                project: project ? { id: project.id, name: project.name } : undefined,
+                labels: labels.nodes.map((label) => ({
+                    id: label.id,
+                    name: label.name,
+                })),
+                createdAt: issue.createdAt
+                    ? new Date(issue.createdAt).toISOString()
+                    : new Date().toISOString(),
+                updatedAt: issue.updatedAt
+                    ? new Date(issue.updatedAt).toISOString()
+                    : new Date().toISOString(),
+            });
+        }
+        return {
+            id: cycle.id,
+            name: cycle.name,
+            number: cycle.number,
+            startsAt: cycle.startsAt
+                ? new Date(cycle.startsAt).toISOString()
+                : undefined,
+            endsAt: cycle.endsAt ? new Date(cycle.endsAt).toISOString() : undefined,
+            isActive: cycle.isActive,
+            progress: cycle.progress,
+            issueCountHistory: cycle.issueCountHistory,
+            team: team
+                ? {
+                    id: team.id,
+                    key: team.key,
+                    name: team.name,
+                }
+                : undefined,
+            issues,
+        };
+    }
+    async resolveCycleId(cycleNameOrId, teamFilter) {
+        if (isUuid(cycleNameOrId)) {
+            return cycleNameOrId;
+        }
+        const filter = {
+            name: { eq: cycleNameOrId },
+        };
+        if (teamFilter) {
+            const teamId = await this.resolveTeamId(teamFilter);
+            filter.team = { id: { eq: teamId } };
+        }
+        const cyclesConnection = await this.client.cycles({
+            filter,
+            first: 10,
+        });
+        const cyclesData = cyclesConnection.nodes;
+        const nodes = [];
+        for (const cycle of cyclesData) {
+            const team = await cycle.team;
+            nodes.push({
+                id: cycle.id,
+                name: cycle.name,
+                number: cycle.number,
+                startsAt: cycle.startsAt
+                    ? new Date(cycle.startsAt).toISOString()
+                    : undefined,
+                isActive: cycle.isActive,
+                isNext: cycle.isNext,
+                isPrevious: cycle.isPrevious,
+                team: team
+                    ? { id: team.id, key: team.key, name: team.name }
+                    : undefined,
+            });
+        }
+        if (nodes.length === 0) {
+            throw notFoundError("Cycle", cycleNameOrId, teamFilter ? `for team ${teamFilter}` : undefined);
+        }
+        let chosen = nodes.find((n) => n.isActive);
+        if (!chosen)
+            chosen = nodes.find((n) => n.isNext);
+        if (!chosen)
+            chosen = nodes.find((n) => n.isPrevious);
+        if (!chosen && nodes.length === 1)
+            chosen = nodes[0];
+        if (!chosen) {
+            const matches = nodes.map((n) => `${n.id} (${n.team?.key || "?"} / #${n.number} / ${n.startsAt})`);
+            throw multipleMatchesError("cycle", cycleNameOrId, matches, "use an ID or scope with --team");
+        }
+        return chosen.id;
+    }
+    async resolveProjectId(projectNameOrId) {
+        if (isUuid(projectNameOrId)) {
+            return projectNameOrId;
+        }
+        const filter = buildEqualityFilter("name", projectNameOrId);
+        const projectsConnection = await this.client.projects({ filter, first: 1 });
+        if (projectsConnection.nodes.length === 0) {
+            throw new Error(`Project "${projectNameOrId}" not found`);
+        }
+        return projectsConnection.nodes[0].id;
     }
 }
 export async function createLinearService(options) {

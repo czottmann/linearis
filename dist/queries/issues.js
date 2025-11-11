@@ -111,6 +111,7 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
     $projectName: String
     $teamKey: String
     $issueNumber: Float
+    $milestoneName: String
   ) {
     # Resolve labels if provided
     labels: issueLabels(filter: { name: { in: $labelNames } }) {
@@ -136,10 +137,27 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
       nodes {
         id
         name
+        projectMilestones {
+          nodes {
+            id
+            name
+          }
+        }
       }
     }
 
-    # Resolve issue by identifier if needed
+    # Resolve milestone if provided (standalone query in case no project context)
+    milestones: projectMilestones(
+      filter: { name: { eq: $milestoneName } }
+      first: 1
+    ) {
+      nodes {
+        id
+        name
+      }
+    }
+
+    # Resolve issue identifier if provided
     issues(
       filter: {
         and: [
@@ -156,6 +174,15 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
           nodes {
             id
             name
+          }
+        }
+        project {
+          id
+          projectMilestones {
+            nodes {
+              id
+              name
+            }
           }
         }
       }
@@ -213,6 +240,10 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
       nodes {
         id
         name
+        projectMilestones {
+          nodes { id name }
+        }
+        # Projects don't own cycles directly, but include teams for context if needed
       }
     }
 
@@ -250,5 +281,8 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
         identifier
       }
     }
+
+    # Resolve cycles by name (team-scoped lookup is preferred but we also provide global fallback)
+    
   }
 `;

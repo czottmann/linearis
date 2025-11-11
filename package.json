@@ -1,6 +1,6 @@
 {
   "name": "linearis",
-  "version": "2025.11.1",
+  "version": "2025.11.2",
   "description": "CLI tool for Linear.app with JSON output, smart ID resolution, and optimized GraphQL queries. Designed for LLM agents and humans who prefer structured data.",
   "main": "dist/main.js",
   "type": "module",
@@ -14,7 +14,11 @@
     "build": "tsc && chmod +x dist/main.js",
     "clean": "rm -rf dist/",
     "start": "tsx src/main.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:commands": "tsx tests/command-coverage.ts"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -28,14 +32,17 @@
   ],
   "author": "Carlo Zottmann <carlo@zottmann.dev>",
   "license": "MIT",
-  "packageManager": "pnpm@10.14.0",
+  "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
     "commander": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8",
     "tsx": "^4.20.5",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.8"
   }
 }

@@ -1,18 +1,34 @@
 #!/usr/bin/env node
 
+/**
+ * Linearis CLI - A command-line tool for Linear.app with structured JSON output
+ *
+ * This tool provides optimized GraphQL operations for Linear API interactions,
+ * smart ID resolution (UUID and TEAM-123 formats), and comprehensive
+ * entity management capabilities.
+ *
+ * Key features:
+ * - Single-query GraphQL operations with batch resolving
+ * - Human-friendly ID resolution (TEAM-123 → UUID)
+ * - Structured JSON output for LLM consumption
+ * - Complete API coverage with optimized queries
+ */
+
 import { program } from "commander";
 import { setupCommentsCommands } from "./commands/comments.js";
 import { setupEmbedsCommands } from "./commands/embeds.js";
 import { setupIssuesCommands } from "./commands/issues.js";
 import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
+import { setupCyclesCommands } from "./commands/cycles.js";
+import { setupProjectMilestonesCommands } from "./commands/project-milestones.js";
 import { outputUsageInfo } from "./utils/usage.js";
 
 // Setup main program
 program
   .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("2025.11.1")
+  .version("2025.11.2")
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
@@ -25,6 +41,8 @@ setupIssuesCommands(program);
 setupCommentsCommands(program);
 setupLabelsCommands(program);
 setupProjectsCommands(program);
+setupCyclesCommands(program);
+setupProjectMilestonesCommands(program);
 setupEmbedsCommands(program);
 
 // Add usage command

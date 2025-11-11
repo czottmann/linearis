@@ -2,13 +2,32 @@ import { Command } from "commander";
 
 /**
  * Generate usage information for all individual subcommands
- * @param program - Commander.js program instance
- * @returns Formatted usage string with all subcommand help blocks
+ * 
+ * This utility traverses the entire command tree and outputs formatted help
+ * for each leaf command. It collects commands recursively, sorts them
+ * alphabetically, and outputs their help blocks separated by dividers.
+ * 
+ * @param program - Commander.js program instance with registered commands
+ * @returns void (outputs help text to console)
+ * 
+ * @example
+ * ```typescript
+ * // In main.ts usage command setup
+ * program
+ *   .command("usage")
+ *   .description("show usage info for all tools")
+ *   .action(() => outputUsageInfo(program));
+ * ```
  */
 export function outputUsageInfo(program: Command) {
   const subcommands: { name: string; command: Command }[] = [];
 
-  // Collect all leaf subcommands (not parent commands)
+  /**
+   * Recursively collect all leaf subcommands (not parent commands)
+   * 
+   * @param cmd - Current command to process
+   * @param prefix - Accumulated command name prefix
+   */
   function collectSubcommands(cmd: Command, prefix: string = "") {
     const currentName = prefix ? `${prefix} ${cmd.name()}` : cmd.name();
 
@@ -32,7 +51,7 @@ export function outputUsageInfo(program: Command) {
   // Sort subcommands alphabetically by full name
   subcommands.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Output full (incl. `.addHelpText()` blocks ) help text for each subcommand
+  // Output full (incl. `.addHelpText()` blocks) help text for each subcommand
   subcommands.forEach(({ command }) => {
     command.outputHelp();
     console.log("\n---\n")
