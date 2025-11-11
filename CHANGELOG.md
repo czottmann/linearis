@@ -16,6 +16,12 @@ All notable changes to this project will be documented in this file. The format 
 
 - Under-the-hood stability bug fixes.
 
+### Fixed
+
+- `issues` commands' embed parser now correctly ignores markdown URLs inside code blocks and inline code <!-- ZCO-1587 -->
+  - Previously extracted URLs from code examples and documentation
+  - Ensures only actual embedded files are detected, not code examples
+
 ## [2025.11.1] - 2025-11-06
 
 ### Added
