@@ -53,7 +53,7 @@ node dist/main.js <command>
 
 ### Package Management Workflows
 
-**Installation with Build** - Using pnpm 10.14.0 (package.json line 23):
+**Installation with Build** - Using pnpm 10.20.0 (package.json line 23):
 
 ```bash
 pnpm install  # Install dependencies and automatically build
@@ -103,7 +103,7 @@ mise use         # Activate configured tool versions
 **Reproducible Builds** - pnpm-lock.yaml
 
 - Exact dependency versions locked for consistent installations
-- pnpm 10.14.0 specified as required package manager
+- pnpm 10.20.0 specified as required package manager
 
 ## Reference
 

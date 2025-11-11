@@ -49,7 +49,7 @@ internal UUIDs.
 
 ### Package Management
 
-- **pnpm 10.14.0** - Package manager specified in package.json packageManager
+- **pnpm 10.20.0** - Package manager specified in package.json packageManager
   field
 - **pnpm-lock.yaml** - Lock file ensuring reproducible builds
 

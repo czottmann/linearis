@@ -20,7 +20,7 @@ Linearis is a CLI tool for Linear.app that outputs structured JSON data, designe
 
 ### Package Management
 
-- Uses `pnpm` (version 10.14.0) as the package manager
+- Uses `pnpm` (version 10.20.0) as the package manager
 - `pnpm install` - Install dependencies
 - `pnpm update` - Update dependencies
 
