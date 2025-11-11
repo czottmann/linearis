@@ -3,9 +3,6 @@
 # Interactive release script for Linearis
 # Uses gum for interactive prompts: https://github.com/charmbracelet/gum
 
-# Exit on error
-set -e
-
 # Color definitions
 set -l COLOR_ERROR "9"
 set -l COLOR_SUCCESS "10"
@@ -39,6 +36,8 @@ end
 
 # Check if we're on main branch
 set current_branch (git branch --show-current)
+or error "Failed to get current branch"
+
 if test "$current_branch" != "main"
     error "Must be on main branch (currently on: $current_branch)"
 end
@@ -53,6 +52,8 @@ echo
 
 # Parse current version from package.json
 set current_version (node -p "require('./package.json').version")
+or error "Failed to read version from package.json"
+
 info "Current version: $current_version"
 
 # Calculate suggested next version
@@ -126,6 +127,8 @@ const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 pkg.version = '$new_version';
 fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
 "
+or error "Failed to update package.json"
+
 success "package.json updated"
 
 # Update CHANGELOG.md
@@ -170,12 +173,18 @@ end
 # Create commit
 info "Creating commit..."
 git add package.json CHANGELOG.md
+or error "Failed to stage files"
+
 git commit -m "[CHORE] Release $new_version"
+or error "Failed to create commit"
+
 success "Commit created"
 
 # Create annotated tag
 info "Creating tag v$new_version..."
 git tag -a "v$new_version" -m "Release $new_version"
+or error "Failed to create tag"
+
 success "Tag created"
 
 # Final confirmation to push
@@ -200,7 +209,10 @@ end
 # Push to origin
 info "Pushing to origin..."
 git push origin main
+or error "Failed to push to origin/main"
+
 git push origin "v$new_version"
+or error "Failed to push tag to origin"
 
 echo
 gum style --border double --padding "1 2" --border-foreground $COLOR_SUCCESS "✅ Release Complete!"
