@@ -12,15 +12,13 @@ All notable changes to this project will be documented in this file. The format 
   - `subIssues` array with `{ id, identifier, title }` for immediate child issues
   - Available in all issue commands: `read`, `list`, and `search`
 
-### Changed
-
-- Under-the-hood stability bug fixes.
-
 ### Fixed
 
 - `issues` commands' embed parser now correctly ignores markdown URLs inside code blocks and inline code <!-- ZCO-1587 -->
   - Previously extracted URLs from code examples and documentation
   - Ensures only actual embedded files are detected, not code examples
+- All date/time fields now output in ISO 8601 format (`2025-11-09T23:00:00.000Z`) instead of verbose JavaScript date strings <!-- ZCO-1577 -->
+- Under-the-hood stability bug fixes.
 
 ## [2025.11.1] - 2025-11-06
 
