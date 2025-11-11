@@ -528,14 +528,14 @@ export class GraphQLIssuesService {
                 id: label.id,
                 name: label.name,
             })),
-            parent: issue.parent
+            parentIssue: issue.parent
                 ? {
                     id: issue.parent.id,
                     identifier: issue.parent.identifier,
                     title: issue.parent.title,
                 }
                 : undefined,
-            children: issue.children?.nodes.map((child) => ({
+            subIssues: issue.children?.nodes.map((child) => ({
                 id: child.id,
                 identifier: child.identifier,
                 title: child.title,

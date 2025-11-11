@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- `issues` commands now include parent and child issue relationships
-  - `parent` field with `{ id, identifier, title }` for parent issue (if exists)
-  - `children` array with `{ id, identifier, title }` for immediate child issues
+- The `issues` commands now include parent and child issue relationships <!-- ZCO-1574, ZCO-1586 -->
+  - `parentIssue` field with `{ id, identifier, title }` for parent issue (if exists)
+  - `subIssues` array with `{ id, identifier, title }` for immediate child issues
   - Available in all issue commands: `read`, `list`, and `search`
 
 ### Changed

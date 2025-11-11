@@ -41,12 +41,12 @@ export interface LinearIssue {
     id: string;
     name: string;
   }>;
-  parent?: {
+  parentIssue?: {
     id: string;
     identifier: string;
     title: string;
   };
-  children?: Array<{
+  subIssues?: Array<{
     id: string;
     identifier: string;
     title: string;

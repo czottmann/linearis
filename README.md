@@ -41,7 +41,7 @@ linearis issues update ABC-123 --state "In Review" --priority 2
 # Add labels to existing issue
 linearis issues update DEV-789 --labels "Frontend,UX" --label-by adding
 
-# Set parent-child relationships
+# Set parent-child relationships (output includes parentIssue and subIssues fields)
 linearis issues update SUB-001 --parent-ticket EPIC-100
 
 # Clear all labels from issue
