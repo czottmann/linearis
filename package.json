@@ -21,6 +21,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:commands": "tsx tests/command-coverage.ts",
+    "prepare": "npm run build",
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "engines": {
