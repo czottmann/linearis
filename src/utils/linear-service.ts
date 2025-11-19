@@ -135,15 +135,17 @@ export class LinearService {
   async getTeams(): Promise<any[]> {
     const teamsConnection = await this.client.teams({
       first: 100,
-      orderBy: "name" as any,
     });
 
-    return teamsConnection.nodes.map((team) => ({
+    // Sort by name client-side since Linear API doesn't support orderBy: "name"
+    const teams = teamsConnection.nodes.map((team) => ({
       id: team.id,
       key: team.key,
       name: team.name,
       description: team.description || null,
     }));
+
+    return teams.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
@@ -162,16 +164,18 @@ export class LinearService {
     const usersConnection = await this.client.users({
       filter: Object.keys(filter).length > 0 ? filter : undefined,
       first: 100,
-      orderBy: "name" as any,
     });
 
-    return usersConnection.nodes.map((user) => ({
+    // Sort by name client-side since Linear API doesn't support orderBy: "name"
+    const users = usersConnection.nodes.map((user) => ({
       id: user.id,
       name: user.name,
       displayName: user.displayName,
       email: user.email,
       active: user.active,
     }));
+
+    return users.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
@@ -673,7 +677,8 @@ export class LinearService {
       return projectNameOrId;
     }
 
-    const filter = buildEqualityFilter("name", projectNameOrId);
+    // Use case-insensitive matching for better UX
+    const filter = { name: { eqIgnoreCase: projectNameOrId } };
     const projectsConnection = await this.client.projects({ filter, first: 1 });
 
     if (projectsConnection.nodes.length === 0) {
