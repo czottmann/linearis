@@ -128,6 +128,53 @@ export class LinearService {
   }
 
   /**
+   * Get all teams in the workspace
+   *
+   * @returns Array of teams with id, key, name, and description
+   */
+  async getTeams(): Promise<any[]> {
+    const teamsConnection = await this.client.teams({
+      first: 100,
+      orderBy: "name" as any,
+    });
+
+    return teamsConnection.nodes.map((team) => ({
+      id: team.id,
+      key: team.key,
+      name: team.name,
+      description: team.description || null,
+    }));
+  }
+
+  /**
+   * Get all users in the workspace
+   *
+   * @param activeOnly - If true, return only active users
+   * @returns Array of users with id, name, displayName, email, and active status
+   */
+  async getUsers(activeOnly?: boolean): Promise<any[]> {
+    const filter: any = {};
+
+    if (activeOnly) {
+      filter.active = { eq: true };
+    }
+
+    const usersConnection = await this.client.users({
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      first: 100,
+      orderBy: "name" as any,
+    });
+
+    return usersConnection.nodes.map((user) => ({
+      id: user.id,
+      name: user.name,
+      displayName: user.displayName,
+      email: user.email,
+      active: user.active,
+    }));
+  }
+
+  /**
    * Get all projects
    */
   async getProjects(): Promise<LinearProject[]> {
