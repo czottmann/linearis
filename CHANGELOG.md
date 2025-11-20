@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2025.11.3] - 2025-11-20
+
+### Added
+
+- New `teams` command with `list` subcommand 🎉 – thanks, [Chad](https://github.com/chadrwalters)! [PR#13](https://github.com/czottmann/linearis/pull/13)
+  - Lists all teams in workspace with id, key, name, and description
+  - Results sorted alphabetically by name
+- New `users` command with `list` subcommand [PR#13](https://github.com/czottmann/linearis/pull/13)
+  - Lists all users with id, name, displayName, email, and active status
+  - Supports `--active` flag to filter for active users only
+  - Results sorted alphabetically by name
+- Integration tests for teams and users commands [PR#13](https://github.com/czottmann/linearis/pull/13)
+
+### Fixed
+
+- GraphQL orderBy error resolved by implementing client-side sorting for teams and users list commands [PR#13](https://github.com/czottmann/linearis/pull/13)
+- Project name matching is now case-insensitive (using `eqIgnoreCase`) for better UX [PR#13](https://github.com/czottmann/linearis/pull/13)
+
+### Documentation
+
+- Added "Teams & Users" section to README.md with usage examples
+- Updated docs/architecture.md, docs/development.md, and docs/files.md to reference new commands
+
 ## [2025.11.2] - 2025-11-11
 
 ### Added
@@ -59,7 +82,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - Initial release of Linearis CLI tool
 
-[2025.11.1]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
+[2025.11.3]: https://github.com/czottmann/linearis/compare/2025.11.2...2025.11.3
+[2025.11.2]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
 [2025.11.1]: https://github.com/czottmann/linearis/compare/1.1.0...2025.11.1
 [1.1.0]: https://github.com/czottmann/linearis/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/czottmann/linearis/releases/tag/1.0.0
