@@ -79,6 +79,19 @@ linearis projects list
 linearis labels list --team Backend
 ```
 
+### Teams & Users
+
+```bash
+# List all teams in the workspace
+linearis teams list
+
+# List all users
+linearis users list
+
+# List only active users
+linearis users list --active
+```
+
 ### Cycles
 
 You can list and read cycles (sprints) for teams. The CLI exposes simple helpers, but the GraphQL API provides a few cycle-related fields you can use to identify relatives (active, next, previous).
@@ -201,7 +214,7 @@ When the the status of a task in the ticket description has changed (task → ta
 The `issues read` command returns an `embeds` array containing files uploaded to Linear (screenshots, documents, etc.) with signed download URLs and expiration timestamps. Use `embeds download` to download these files when needed.
 ```
 
-## Author
+## Author / Maintainer
 
 Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev, https://github.com/czottmann.
 
@@ -209,6 +222,11 @@ This project is neither affiliated with nor endorsed by Linear. I'm just a very 
 
 > [!TIP]
 > I make Shortcuts-related macOS & iOS productivity apps like [Actions For Obsidian](https://actions.work/actions-for-obsidian), [Browser Actions](https://actions.work/browser-actions) (which adds Shortcuts support for several major browsers), and [BarCuts](https://actions.work/barcuts) (a surprisingly useful contextual Shortcuts launcher). Check them out!
+
+## Contributors 🤙🏼
+
+- [ryanrozich (Ryan Rozich)](https://github.com/ryanrozich)
+- [chadrwalters (Chad Walters)](https://github.com/chadrwalters)
 
 ## Documentation
 
