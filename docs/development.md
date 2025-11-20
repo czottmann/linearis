@@ -2,16 +2,9 @@
 
 # Development
 
-Linearis follows TypeScript-first development practices with strict
-typing, modular architecture, and GraphQL-optimized design patterns. Development
-emphasizes code clarity, maintainability, and efficient GraphQL operations for
-optimal Linear integration performance.
+Linearis follows TypeScript-first development practices with strict typing, modular architecture, and GraphQL-optimized design patterns. Development emphasizes code clarity, maintainability, and efficient GraphQL operations for optimal Linear integration performance.
 
-The codebase uses modern ES modules, async/await patterns throughout, and
-leverages TypeScript's type system for compile-time safety. All development
-follows the principle of smart defaults with explicit user control when needed.
-Recent optimization work focuses on replacing SDK-heavy operations with direct
-GraphQL queries.
+The codebase uses modern ES modules, async/await patterns throughout, and leverages TypeScript's type system for compile-time safety. All development follows the principle of smart defaults with explicit user control when needed. Recent optimization work focuses on replacing SDK-heavy operations with direct GraphQL queries.
 
 ## Code Style
 
@@ -113,8 +106,7 @@ export async function createLinearService(
 ```typescript
 // Generic UUID validation using proper regex
 export function isUuid(value: string): boolean {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
 ```
@@ -177,16 +169,14 @@ if (labelMode === "adding") {
 
 1. **Define Interfaces** - Add to src/utils/linear-types.d.ts
 2. **Create GraphQL Queries** - Add optimized queries to src/queries/
-3. **Implement GraphQL Service Methods** - Add to
-   src/utils/graphql-issues-service.ts or create new GraphQL service
+3. **Implement GraphQL Service Methods** - Add to src/utils/graphql-issues-service.ts or create new GraphQL service
 4. **Create Command Handler** - Add to appropriate src/commands/ file
 5. **Register Command** - Import and setup in src/main.ts
 
 ### GraphQL Development Workflow
 
 1. **Design Query Strategy** - Single query vs batch resolution approach
-2. **Create Query Fragments** - Reuse existing fragments from
-   src/queries/common.ts
+2. **Create Query Fragments** - Reuse existing fragments from src/queries/common.ts
 3. **Implement Service Method** - Use GraphQLService for raw execution
 4. **Add Error Handling** - Transform GraphQL errors to user-friendly messages
 5. **Test Performance** - Compare against SDK-based approach for improvements
@@ -276,6 +266,8 @@ export function outputError(error: Error): void {
 - issues.ts - Issue-related commands with enhanced label and parent management
 - projects.ts - Project-related commands
 - comments.ts - Comment operations with lightweight ID resolution
+- teams.ts - Team operations (list) with workspace team discovery
+- users.ts - User operations (list) with active user filtering
 - Pattern: Each domain gets its own command file
 
 **Query Layer** - `src/queries/` directory:
@@ -298,11 +290,8 @@ export function outputError(error: Error): void {
 
 ### Development Best Practices
 
-**Type Safety** - Every function parameter and return type explicitly typed
-**Error Boundaries** - All async operations wrapped with error handling\
-**GraphQL First** - New operations use GraphQL service for optimal performance
-**User Experience** - Smart defaults with explicit override options **Build
-Automation** - npm prepare script ensures consistent builds
+**Type Safety** - Every function parameter and return type explicitly typed **Error Boundaries** - All async operations wrapped with error handling\
+**GraphQL First** - New operations use GraphQL service for optimal performance **User Experience** - Smart defaults with explicit override options **Build Automation** - npm prepare script ensures consistent builds
 
 ### Build System Integration
 
@@ -322,13 +311,6 @@ npm install  # Triggers: npm run clean && npm run build
 
 ### Common Development Issues
 
-**ES Module Imports** - Always use .js extensions in imports, even for .ts files
-**Authentication Testing** - Use token file method for local development
-**GraphQL vs SDK** - Prefer GraphQL service for new operations, use SDK for
-fallbacks\
-**API Rate Limits** - Linear API has reasonable limits, but GraphQL batch
-operations help **Development vs Production** - Use tsx for development,
-compiled JS for production (significantly faster) **Missing dist/** - Run
-`npm install` or `npm run build` to create executable compiled output\
-**Build creates executable** - npm run build automatically makes dist/main.js
-executable
+**ES Module Imports** - Always use .js extensions in imports, even for .ts files **Authentication Testing** - Use token file method for local development **GraphQL vs SDK** - Prefer GraphQL service for new operations, use SDK for fallbacks\
+**API Rate Limits** - Linear API has reasonable limits, but GraphQL batch operations help **Development vs Production** - Use tsx for development, compiled JS for production (significantly faster) **Missing dist/** - Run `npm install` or `npm run build` to create executable compiled output\
+**Build creates executable** - npm run build automatically makes dist/main.js executable

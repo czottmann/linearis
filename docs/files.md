@@ -10,7 +10,7 @@ All source files use modern ES modules with TypeScript for type safety. The proj
 
 ### Main Application Logic
 
-**src/main.ts** - CLI entry point and program setup with Commander.js framework **src/commands/issues.ts** - Complete issue management commands (list, search, create, read, update) with enhanced label and parent relationship management **src/commands/projects.ts** - Project operations commands (list, read) with simplified interface **src/commands/comments.ts** - Comment operations (create) with lightweight issue ID resolution **src/commands/embeds.ts** - File download command for Linear uploaded files with signed URL support
+**src/main.ts** - CLI entry point and program setup with Commander.js framework **src/commands/issues.ts** - Complete issue management commands (list, search, create, read, update) with enhanced label and parent relationship management **src/commands/projects.ts** - Project operations commands (list, read) with simplified interface **src/commands/comments.ts** - Comment operations (create) with lightweight issue ID resolution **src/commands/teams.ts** - Team operations (list) with workspace team discovery **src/commands/users.ts** - User operations (list) with active user filtering **src/commands/embeds.ts** - File download command for Linear uploaded files with signed URL support
 
 ### Service Layer
 
