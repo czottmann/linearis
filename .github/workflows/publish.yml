@@ -65,7 +65,7 @@ jobs:
         run: pnpm test
 
       - name: Publish to npm
-        run: pnpm publish --no-git-checks
+        run: npm publish --provenance --access public
 
       - name: Verify publish success
         run: |
