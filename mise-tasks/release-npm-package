@@ -1,8 +1,23 @@
 #!/usr/bin/env fish
 #MISE description="Releases new npm package"
 
+echo "
 # Interactive release script for Linearis
-# Uses gum for interactive prompts: https://github.com/charmbracelet/gum
+
+This script automates the entire npm package release process:
+
+   1. Validates prerequisites (gum installed, on main branch, clean working tree)
+   2. Reads current version from package.json (uses CalVer: YYYY.M.N format)
+   3. Calculates and suggests next version based on current date
+   4. Prompts for new version number (with validation)
+   5. Optionally prompts for changelog entry (markdown supported)
+   6. Updates package.json version
+   7. Optionally prepends new entry to CHANGELOG.md with current date
+   8. Shows diff and creates git commit with updated files
+   9. Creates annotated git tag (v<version>)
+  10. Optionally pushes commit and tag to origin/main
+      (pushing triggers GitHub Actions workflow that publishes to npm)
+"
 
 function error
     echo "🔴 Error: $argv"
@@ -89,19 +104,26 @@ end
 success "Version: $new_version"
 echo
 
-# Get changelog entry
-printf "## Write release notes\nMarkdown supported. Press ESC to cancel, Ctrl+D when done" | gum format
-set changelog_entry (gum write --placeholder "- Feature: Added X\n- Fix: Resolved Y\n- Change: Updated Z")
+# Ask if changelog needs updating
+if gum confirm "Update CHANGELOG.md?"
+    # Get changelog entry
+    printf "## Write release notes\nMarkdown supported. Press ESC to cancel, Ctrl+D when done" | gum format
+    set changelog_entry (gum write --placeholder "- Feature: Added X\n- Fix: Resolved Y\n- Change: Updated Z")
 
-if test -z "$changelog_entry"
-    error "Changelog entry cannot be empty"
+    if test -z "$changelog_entry"
+        error "Changelog entry cannot be empty"
+    end
+
+    success "Changelog entry captured"
+else
+    set changelog_entry ""
+    info "Skipping changelog update"
 end
-
-success "Changelog entry captured"
 echo
 
 # Show summary
-echo "
+if test -n "$changelog_entry"
+    echo "
 ## Release Summary
 
 Version: $current_version → $new_version
@@ -111,7 +133,17 @@ Version: $current_version → $new_version
 $changelog_entry
 ```
 " \
-    | gum format
+        | gum format
+else
+    echo "
+## Release Summary
+
+Version: $current_version → $new_version
+
+(Changelog not updated)
+" \
+        | gum format
+end
 
 # Confirm to proceed
 if not gum confirm "Update files and create commit?"
@@ -131,48 +163,62 @@ or error "Failed to update package.json"
 
 success "package.json updated"
 
-# Update CHANGELOG.md
-info "Updating CHANGELOG.md..."
-set release_date (date +%Y-%m-%d)
-set changelog_header "## [$new_version] - $release_date"
+# Update CHANGELOG.md (if changelog entry was provided)
+if test -n "$changelog_entry"
+    info "Updating CHANGELOG.md..."
+    set release_date (date +%Y-%m-%d)
+    set changelog_header "## [$new_version] - $release_date"
 
-# Create temp file with new entry
-set temp_file (mktemp)
-echo "$changelog_header" >$temp_file
-echo >>$temp_file
-echo "$changelog_entry" >>$temp_file
-echo >>$temp_file
+    # Create temp file with new entry
+    set temp_file (mktemp)
+    echo "$changelog_header" >$temp_file
+    echo >>$temp_file
+    echo "$changelog_entry" >>$temp_file
+    echo >>$temp_file
 
-# Prepend to existing changelog (after the title)
-if test -f CHANGELOG.md
-    # Insert after the first line (assuming first line is "# Changelog")
-    sed '1 r /dev/stdin' CHANGELOG.md <$temp_file >CHANGELOG.md.tmp
-    mv CHANGELOG.md.tmp CHANGELOG.md
-else
-    # Create new changelog
-    echo "# Changelog" >CHANGELOG.md
-    echo >>CHANGELOG.md
-    cat $temp_file >>CHANGELOG.md
+    # Prepend to existing changelog (after the title)
+    if test -f CHANGELOG.md
+        # Insert after the first line (assuming first line is "# Changelog")
+        sed '1 r /dev/stdin' CHANGELOG.md <$temp_file >CHANGELOG.md.tmp
+        mv CHANGELOG.md.tmp CHANGELOG.md
+    else
+        # Create new changelog
+        echo "# Changelog" >CHANGELOG.md
+        echo >>CHANGELOG.md
+        cat $temp_file >>CHANGELOG.md
+    end
+
+    rm $temp_file
+    success "CHANGELOG.md updated"
 end
-
-rm $temp_file
-success "CHANGELOG.md updated"
 
 # Show git diff
 echo
 info "Changes to be committed:"
-git diff package.json CHANGELOG.md
+if test -n "$changelog_entry"
+    git diff package.json CHANGELOG.md
+else
+    git diff package.json
+end
 
 echo
 if not gum confirm "Create commit and tag?"
     warning "Rolling back changes..."
-    git restore package.json CHANGELOG.md
+    if test -n "$changelog_entry"
+        git restore package.json CHANGELOG.md
+    else
+        git restore package.json
+    end
     error "Release cancelled"
 end
 
 # Create commit
 info "Creating commit..."
-git add package.json CHANGELOG.md
+if test -n "$changelog_entry"
+    git add package.json CHANGELOG.md
+else
+    git add package.json
+end
 or error "Failed to stage files"
 
 git commit -m "[CHORE] Release $new_version"
