@@ -128,6 +128,57 @@ export class LinearService {
   }
 
   /**
+   * Get all teams in the workspace
+   *
+   * @returns Array of teams with id, key, name, and description
+   */
+  async getTeams(): Promise<any[]> {
+    const teamsConnection = await this.client.teams({
+      first: 100,
+    });
+
+    // Sort by name client-side since Linear API doesn't support orderBy: "name"
+    const teams = teamsConnection.nodes.map((team) => ({
+      id: team.id,
+      key: team.key,
+      name: team.name,
+      description: team.description || null,
+    }));
+
+    return teams.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Get all users in the workspace
+   *
+   * @param activeOnly - If true, return only active users
+   * @returns Array of users with id, name, displayName, email, and active status
+   */
+  async getUsers(activeOnly?: boolean): Promise<any[]> {
+    const filter: any = {};
+
+    if (activeOnly) {
+      filter.active = { eq: true };
+    }
+
+    const usersConnection = await this.client.users({
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      first: 100,
+    });
+
+    // Sort by name client-side since Linear API doesn't support orderBy: "name"
+    const users = usersConnection.nodes.map((user) => ({
+      id: user.id,
+      name: user.name,
+      displayName: user.displayName,
+      email: user.email,
+      active: user.active,
+    }));
+
+    return users.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
    * Get all projects
    */
   async getProjects(): Promise<LinearProject[]> {
@@ -626,7 +677,8 @@ export class LinearService {
       return projectNameOrId;
     }
 
-    const filter = buildEqualityFilter("name", projectNameOrId);
+    // Use case-insensitive matching for better UX
+    const filter = { name: { eqIgnoreCase: projectNameOrId } };
     const projectsConnection = await this.client.projects({ filter, first: 1 });
 
     if (projectsConnection.nodes.length === 0) {

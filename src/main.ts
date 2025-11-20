@@ -22,6 +22,8 @@ import { setupLabelsCommands } from "./commands/labels.js";
 import { setupProjectsCommands } from "./commands/projects.js";
 import { setupCyclesCommands } from "./commands/cycles.js";
 import { setupProjectMilestonesCommands } from "./commands/project-milestones.js";
+import { setupTeamsCommands } from "./commands/teams.js";
+import { setupUsersCommands } from "./commands/users.js";
 import { outputUsageInfo } from "./utils/usage.js";
 
 // Setup main program
@@ -44,6 +46,8 @@ setupProjectsCommands(program);
 setupCyclesCommands(program);
 setupProjectMilestonesCommands(program);
 setupEmbedsCommands(program);
+setupTeamsCommands(program);
+setupUsersCommands(program);
 
 // Add usage command
 program.command("usage")

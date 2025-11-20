@@ -107,8 +107,8 @@ export const BATCH_RESOLVE_FOR_SEARCH_QUERY = `
       }
     }
 
-    # Resolve project if provided
-    projects(filter: { name: { eq: $projectName } }, first: 1) {
+    # Resolve project if provided (case-insensitive to be user-friendly)
+    projects(filter: { name: { eqIgnoreCase: $projectName } }, first: 1) {
       nodes {
         id
         name
@@ -196,8 +196,8 @@ export const BATCH_RESOLVE_FOR_UPDATE_QUERY = `
       }
     }
 
-    # Resolve project if provided
-    projects(filter: { name: { eq: $projectName } }, first: 1) {
+    # Resolve project if provided (case-insensitive to be user-friendly)
+    projects(filter: { name: { eqIgnoreCase: $projectName } }, first: 1) {
       nodes {
         id
         name
@@ -323,8 +323,8 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
       }
     }
 
-    # Resolve project if provided
-    projects(filter: { name: { eq: $projectName } }, first: 1) {
+    # Resolve project if provided (case-insensitive to be user-friendly)
+    projects(filter: { name: { eqIgnoreCase: $projectName } }, first: 1) {
       nodes {
         id
         name
