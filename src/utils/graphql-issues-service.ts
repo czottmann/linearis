@@ -466,10 +466,17 @@ export class GraphQLIssuesService {
     // Resolve team ID
     let finalTeamId = args.teamId;
     if (args.teamId && !isUuid(args.teamId)) {
-      if (!resolveResult.teams?.nodes?.length) {
+      const resolvedTeam = resolveResult.teams?.nodes?.[0];
+      // Validate the returned team actually matches the requested identifier
+      // (GraphQL `or` filter with undefined variables matches anything)
+      if (
+        !resolvedTeam ||
+        (resolvedTeam.key !== args.teamId &&
+          resolvedTeam.name.toLowerCase() !== args.teamId.toLowerCase())
+      ) {
         throw new Error(`Team "${args.teamId}" not found`);
       }
-      finalTeamId = resolveResult.teams.nodes[0].id;
+      finalTeamId = resolvedTeam.id;
     } else if (!finalTeamId) {
       // If no team specified, we'll let Linear's default behavior handle it
       // or the API will return an error
@@ -669,10 +676,17 @@ export class GraphQLIssuesService {
     // Resolve filter IDs
     let finalTeamId = args.teamId;
     if (args.teamId && !isUuid(args.teamId)) {
-      if (!resolveResult.teams?.nodes?.length) {
+      const resolvedTeam = resolveResult.teams?.nodes?.[0];
+      // Validate the returned team actually matches the requested identifier
+      // (GraphQL `or` filter with undefined variables matches anything)
+      if (
+        !resolvedTeam ||
+        (resolvedTeam.key !== args.teamId &&
+          resolvedTeam.name.toLowerCase() !== args.teamId.toLowerCase())
+      ) {
         throw new Error(`Team "${args.teamId}" not found`);
       }
-      finalTeamId = resolveResult.teams.nodes[0].id;
+      finalTeamId = resolvedTeam.id;
     }
 
     let finalProjectId = args.projectId;
