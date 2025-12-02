@@ -155,6 +155,72 @@ describe("GraphQLIssuesService - Team Resolution Validation", () => {
       expect(result).toEqual([]);
     });
 
+    it("should accept team key containing digits at end", async () => {
+      // Bug: regex /^[A-Z]+$/ excludes digits, so "ABC1" is treated as team name
+      // This causes lookup by name "ABC1" instead of key "ABC1"
+      // The GraphQL query then uses teamName="ABC1", not teamKey="ABC1"
+      // Since no team has name "ABC1", the `or` filter with undefined teamKey
+      // matches any team, returning a wrong result.
+      //
+      // To test this properly, we need to verify the QUERY is built correctly.
+      // We do this by checking which variables are passed to rawRequest.
+      mockGraphQLService.rawRequest
+        .mockResolvedValueOnce({
+          teams: {
+            nodes: [
+              { id: "abc1-team-id", key: "ABC1", name: "Alpha Bravo Charlie" },
+            ],
+          },
+          projects: { nodes: [] },
+          users: { nodes: [] },
+        })
+        .mockResolvedValueOnce({
+          issues: { nodes: [] },
+        });
+
+      await service.searchIssues({
+        query: "test",
+        teamId: "ABC1",
+        limit: 10,
+      });
+
+      // The key assertion: teamKey should be set to the value, teamName to null
+      // Bug: code sets teamName="ABC1" instead of teamKey="ABC1"
+      // Fix: explicitly set both (one to value, one to null) for Linear's GraphQL or filter
+      const batchResolveCall = mockGraphQLService.rawRequest.mock.calls[0];
+      const variables = batchResolveCall[1];
+      expect(variables.teamKey).toBe("ABC1");
+      expect(variables.teamName).toBeNull();
+    });
+
+    it("should accept team key starting with digits", async () => {
+      mockGraphQLService.rawRequest
+        .mockResolvedValueOnce({
+          teams: {
+            nodes: [
+              { id: "42x-team-id", key: "42X", name: "Forty Two X" },
+            ],
+          },
+          projects: { nodes: [] },
+          users: { nodes: [] },
+        })
+        .mockResolvedValueOnce({
+          issues: { nodes: [] },
+        });
+
+      await service.searchIssues({
+        query: "test",
+        teamId: "42X",
+        limit: 10,
+      });
+
+      // The key assertion: teamKey should be set to the value, teamName to null
+      const batchResolveCall = mockGraphQLService.rawRequest.mock.calls[0];
+      const variables = batchResolveCall[1];
+      expect(variables.teamKey).toBe("42X");
+      expect(variables.teamName).toBeNull();
+    });
+
     it("should pass through UUID without validation", async () => {
       const uuid = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -243,6 +309,59 @@ describe("GraphQLIssuesService - Team Resolution Validation", () => {
       });
 
       expect(result.identifier).toBe("ENG-123");
+    });
+
+    it("should accept team key containing digits", async () => {
+      // Bug: regex /^[A-Z]+$/ excludes digits, so "DEV2" is treated as team name
+      mockGraphQLService.rawRequest
+        .mockResolvedValueOnce({
+          teams: {
+            nodes: [
+              { id: "dev2-team-id", key: "DEV2", name: "Development Team 2" },
+            ],
+          },
+          projects: { nodes: [] },
+          labels: { nodes: [] },
+          parentIssues: { nodes: [] },
+        })
+        .mockResolvedValueOnce({
+          issueCreate: {
+            success: true,
+            issue: {
+              id: "new-issue-id",
+              identifier: "DEV2-456",
+              title: "Test Issue",
+              description: null,
+              priority: 0,
+              estimate: null,
+              team: { id: "dev2-team-id", key: "DEV2", name: "Development Team 2" },
+              state: { id: "state-1", name: "Triage" },
+              assignee: null,
+              project: null,
+              cycle: null,
+              projectMilestone: null,
+              labels: { nodes: [] },
+              comments: { nodes: [] },
+              parent: null,
+              children: { nodes: [] },
+              createdAt: "2025-01-01T00:00:00Z",
+              updatedAt: "2025-01-01T00:00:00Z",
+            },
+          },
+        });
+
+      await service.createIssue({
+        title: "Test Issue",
+        teamId: "DEV2",
+      });
+
+      // The key assertion: teamKey should be set to the value, teamName to null
+      // Bug: code sets teamName="DEV2" instead of teamKey="DEV2"
+      // Fix: explicitly set both (one to value, one to null) for Linear's GraphQL or filter
+      const batchResolveCall = mockGraphQLService.rawRequest.mock.calls[0];
+      const variables = batchResolveCall[1];
+      expect(variables.teamKey).toBe("DEV2");
+      expect(variables.teamName).toBeNull();
     });
   });
 });
