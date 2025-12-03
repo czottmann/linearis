@@ -155,6 +155,32 @@ describe("GraphQLIssuesService - Team Resolution Validation", () => {
       expect(result).toEqual([]);
     });
 
+    it("should accept team key case-insensitively", async () => {
+      // Setup: batch resolve returns team with uppercase key
+      mockGraphQLService.rawRequest
+        .mockResolvedValueOnce({
+          teams: {
+            nodes: [
+              { id: "correct-team-id", key: "ENG", name: "Engineering" },
+            ],
+          },
+          projects: { nodes: [] },
+          users: { nodes: [] },
+        })
+        .mockResolvedValueOnce({
+          issues: { nodes: [] },
+        });
+
+      // Should not throw - team key matches case-insensitively (user typed lowercase)
+      const result = await service.searchIssues({
+        query: "test",
+        teamId: "eng",
+        limit: 10,
+      });
+
+      expect(result).toEqual([]);
+    });
+
     it("should accept team key containing digits at end", async () => {
       // Bug: regex /^[A-Z]+$/ excludes digits, so "ABC1" is treated as team name
       // This causes lookup by name "ABC1" instead of key "ABC1"
