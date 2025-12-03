@@ -1,3 +1,26 @@
+// Shared reference types for nested entities
+export interface UserRef {
+  id: string;
+  name: string;
+}
+
+export interface ProjectRef {
+  id: string;
+  name: string;
+}
+
+export interface IssueRef {
+  id: string;
+  identifier: string;
+  title: string;
+}
+
+export interface TeamRef {
+  id: string;
+  key: string;
+  name: string;
+}
+
 export interface LinearIssue {
   id: string;
   identifier: string;
@@ -259,4 +282,58 @@ export interface MilestoneUpdateOptions {
   description?: string;
   targetDate?: string;
   sortOrder?: string;
+}
+
+// Document types
+export interface LinearDocument {
+  id: string;
+  title: string;
+  content?: string;
+  slugId: string;
+  url: string;
+  icon?: string;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+  creator?: UserRef;
+  project?: ProjectRef;
+  trashed?: boolean;
+}
+
+export interface DocumentCreateInput {
+  title: string;
+  content?: string;
+  projectId?: string;
+  teamId?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface DocumentUpdateInput {
+  title?: string;
+  content?: string;
+  projectId?: string;
+  icon?: string;
+  color?: string;
+}
+
+// Attachment types
+export interface LinearAttachment {
+  id: string;
+  title: string;
+  subtitle?: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  issue: IssueRef;
+  creator?: UserRef;
+}
+
+export interface AttachmentCreateInput {
+  issueId: string;
+  url: string;
+  title: string;
+  subtitle?: string;
+  commentBody?: string;
+  iconUrl?: string;
 }
