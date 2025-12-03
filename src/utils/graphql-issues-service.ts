@@ -476,7 +476,7 @@ export class GraphQLIssuesService {
       // (GraphQL `or` filter with undefined variables matches anything)
       if (
         !resolvedTeam ||
-        (resolvedTeam.key !== args.teamId &&
+        (resolvedTeam.key.toUpperCase() !== args.teamId.toUpperCase() &&
           resolvedTeam.name.toLowerCase() !== args.teamId.toLowerCase())
       ) {
         throw new Error(`Team "${args.teamId}" not found`);
@@ -690,7 +690,7 @@ export class GraphQLIssuesService {
       // (GraphQL `or` filter with undefined variables matches anything)
       if (
         !resolvedTeam ||
-        (resolvedTeam.key !== args.teamId &&
+        (resolvedTeam.key.toUpperCase() !== args.teamId.toUpperCase() &&
           resolvedTeam.name.toLowerCase() !== args.teamId.toLowerCase())
       ) {
         throw new Error(`Team "${args.teamId}" not found`);
