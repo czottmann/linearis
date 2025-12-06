@@ -15,3 +15,9 @@ export * from "./common.js";
 
 // Optimized queries for issue CRUD operations and batch resolution
 export * from "./issues.js";
+
+// Document queries and mutations
+export * from "./documents.js";
+
+// Attachment queries and mutations
+export * from "./attachments.js";
