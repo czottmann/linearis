@@ -220,6 +220,12 @@ Carlo Zottmann, <carlo@zottmann.dev>, https://c.zottmann.dev, https://github.com
 
 This project is neither affiliated with nor endorsed by Linear. I'm just a very happy customer.
 
+### Sponsoring this project
+
+I don't accept sponsoring in the "GitHub sponsorship" sense[^1] but [next to my own apps, I also sell "Tokens of Appreciation"](https://actions.work/store/?ref=github). Any support is appreciated! 😉
+
+[^1]: Apparently, the German revenue service is still having some fits over "money for nothing??".
+
 > [!TIP]
 > I make Shortcuts-related macOS & iOS productivity apps like [Actions For Obsidian](https://actions.work/actions-for-obsidian), [Browser Actions](https://actions.work/browser-actions) (which adds Shortcuts support for several major browsers), and [BarCuts](https://actions.work/barcuts) (a surprisingly useful contextual Shortcuts launcher). Check them out!
 
