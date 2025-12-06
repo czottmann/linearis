@@ -775,6 +775,7 @@ export class GraphQLIssuesService {
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description || undefined,
+      branchName: issue.branchName || undefined,
       embeds: issue.description ? extractEmbeds(issue.description) : undefined,
       state: {
         id: issue.state.id,

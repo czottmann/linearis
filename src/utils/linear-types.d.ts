@@ -3,6 +3,7 @@ export interface LinearIssue {
   identifier: string;
   title: string;
   description?: string;
+  branchName?: string;
   embeds?: Array<{
     label: string;
     url: string;

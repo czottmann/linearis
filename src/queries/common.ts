@@ -15,6 +15,7 @@ export const ISSUE_CORE_FIELDS = `
   identifier
   title
   description
+  branchName
   priority
   estimate
   createdAt
