@@ -770,6 +770,29 @@ export class GraphQLIssuesService {
    * Transform GraphQL issue response to LinearIssue format
    */
   private transformIssueData(issue: any): LinearIssue {
+    try {
+      return this.doTransformIssueData(issue);
+    } catch (error: any) {
+      // Diagnostic output: dump raw API response to help debug null field issues
+      // See: https://github.com/czottmann/linearis/issues/6
+      const diagnostic = {
+        error: error.message,
+        stack: error.stack,
+        rawIssueData: issue,
+      };
+      console.error(
+        "\n[DEBUG] Issue transform failed. Raw API response:\n" +
+          JSON.stringify(diagnostic, null, 2) +
+          "\n\nPlease report this output at: https://github.com/czottmann/linearis/issues\n",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Internal transform implementation
+   */
+  private doTransformIssueData(issue: any): LinearIssue {
     return {
       id: issue.id,
       identifier: issue.identifier,

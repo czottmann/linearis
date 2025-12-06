@@ -8,7 +8,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- `issues` commands now include the `branchName` field (the git branch name associated with the issue). [#14](https://github.com/czottmann/linearis/issues/14)
+- `issues` commands now include the `branchName` field (the git branch name associated with the issue). [#14](https://github.com/czottmann/linearis/issues/14) <!-- ZCO-1629 -->
+- Diagnostic output for issue transform errors, showing raw API response and stack trace to help debug null field issues. [#6](https://github.com/czottmann/linearis/issues/6) <!-- ZCO-1630 -->
 
 ## [2025.11.3] - 2025-11-20
 
