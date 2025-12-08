@@ -129,7 +129,8 @@ export function setupIssuesCommands(program: Command): void {
       "--cycle <cycle>",
       "cycle name or ID (requires --team)"
     )
-    .option("--status <status>", "status name or ID")
+    .option("--state <state>", "state name or ID")
+    .option("--status <status>", "state name or ID (deprecated, use --state)")
     .option("--parent-ticket <parentId>", "parent issue ID or identifier")
     .action(
       handleAsyncCommand(
@@ -149,6 +150,12 @@ export function setupIssuesCommands(program: Command): void {
             labelIds = options.labels.split(",").map((l: string) => l.trim());
           }
 
+          // Support both --state and --status (deprecated)
+          if (options.status) {
+            console.error("Warning: --status is deprecated, use --state instead");
+          }
+          const stateValue = options.state || options.status;
+
           const createArgs = {
             title,
             teamId: options.team, // GraphQL service handles team resolution
@@ -156,7 +163,7 @@ export function setupIssuesCommands(program: Command): void {
             assigneeId: options.assignee,
             priority: options.priority ? parseInt(options.priority) : undefined,
             projectId: options.project, // GraphQL service handles project resolution
-            stateId: options.status,
+            stateId: stateValue,
             labelIds, // GraphQL service handles label resolution
             parentId: options.parentTicket, // GraphQL service handles parent resolution
             milestoneId: options.projectMilestone,
