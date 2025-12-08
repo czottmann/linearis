@@ -261,3 +261,70 @@ export interface MilestoneUpdateOptions {
   targetDate?: string;
   sortOrder?: string;
 }
+
+// Document types
+export interface LinearDocument {
+  id: string;
+  title: string;
+  content?: string;
+  slugId: string;
+  url: string;
+  icon?: string;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+  creator?: {
+    id: string;
+    name: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+  };
+  trashed?: boolean;
+}
+
+export interface DocumentCreateInput {
+  title: string;
+  content?: string;
+  projectId?: string;
+  teamId?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface DocumentUpdateInput {
+  title?: string;
+  content?: string;
+  projectId?: string;
+  icon?: string;
+  color?: string;
+}
+
+// Attachment types (internal use for documents linking)
+export interface LinearAttachment {
+  id: string;
+  title: string;
+  subtitle?: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  issue: {
+    id: string;
+    identifier: string;
+    title: string;
+  };
+  creator?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface AttachmentCreateInput {
+  issueId: string;
+  url: string;
+  title: string;
+  subtitle?: string;
+  commentBody?: string;
+  iconUrl?: string;
+}
