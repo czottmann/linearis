@@ -6,13 +6,13 @@ import { handleAsyncCommand, outputSuccess } from "../utils/output.js";
 
 /**
  * Setup issues commands on the program
- * 
+ *
  * Registers the `issues` command group with comprehensive issue management
  * operations including create, read, list, search, and update functionality.
  * Uses optimized GraphQL queries for efficient data retrieval.
- * 
+ *
  * @param program - Commander.js program instance to register commands on
- * 
+ *
  * @example
  * ```typescript
  * // In main.ts
@@ -31,9 +31,9 @@ export function setupIssuesCommands(program: Command): void {
 
   /**
    * List issues
-   * 
+   *
    * Command: `linearis issues list [--limit <number>]`
-   * 
+   *
    * Lists issues with all relationships in a single optimized GraphQL query.
    * Includes comments, assignees, projects, labels, and state information.
    */
@@ -52,7 +52,7 @@ export function setupIssuesCommands(program: Command): void {
             graphQLService,
             linearService,
           );
-          
+
           // Fetch issues with optimized single query
           const result = await issuesService.getIssues(parseInt(options.limit));
           outputSuccess(result);
@@ -62,9 +62,9 @@ export function setupIssuesCommands(program: Command): void {
 
   /**
    * Search issues
-   * 
+   *
    * Command: `linearis issues search <query> [options]`
-   * 
+   *
    * Searches issues with optional filtering by team, assignee, project,
    * and workflow states. Uses optimized GraphQL queries with batch resolution.
    */
@@ -73,7 +73,7 @@ export function setupIssuesCommands(program: Command): void {
     .option("--team <team>", "filter by team key, name, or ID")
     .option("--assignee <assigneeId>", "filter by assignee ID")
     .option("--project <project>", "filter by project name or ID")
-    .option("--states <states>", "filter by states (comma-separated)")
+    .option("--status <status>", "filter by status (comma-separated)")
     .option("-l, --limit <number>", "limit results", "10")
     .action(
       handleAsyncCommand(
@@ -92,7 +92,7 @@ export function setupIssuesCommands(program: Command): void {
             teamId: options.team, // GraphQL service handles team resolution
             assigneeId: options.assignee, // GraphQL service handles assignee resolution
             projectId: options.project, // GraphQL service handles project resolution
-            states: options.states ? options.states.split(",") : undefined,
+            status: options.status ? options.status.split(",") : undefined,
             limit: parseInt(options.limit),
           };
           const result = await issuesService.searchIssues(searchArgs);
@@ -103,9 +103,9 @@ export function setupIssuesCommands(program: Command): void {
 
   /**
    * Create new issue
-   * 
+   *
    * Command: `linearis issues create <title> [options]`
-   * 
+   *
    * Creates a new issue with optional description, assignee, priority,
    * project, labels, and milestone. Uses smart ID resolution for all
    * entity references (teams, projects, labels, etc.).
@@ -127,7 +127,7 @@ export function setupIssuesCommands(program: Command): void {
     )
     .option(
       "--cycle <cycle>",
-      "cycle name or ID (requires --team)"
+      "cycle name or ID (requires --team)",
     )
     .option("--status <status>", "status name or ID")
     .option("--parent-ticket <parentId>", "parent issue ID or identifier")
@@ -156,7 +156,7 @@ export function setupIssuesCommands(program: Command): void {
             assigneeId: options.assignee,
             priority: options.priority ? parseInt(options.priority) : undefined,
             projectId: options.project, // GraphQL service handles project resolution
-            stateId: options.status,
+            statusId: options.status,
             labelIds, // GraphQL service handles label resolution
             parentId: options.parentTicket, // GraphQL service handles parent resolution
             milestoneId: options.projectMilestone,
@@ -171,9 +171,9 @@ export function setupIssuesCommands(program: Command): void {
 
   /**
    * Get issue details
-   * 
+   *
    * Command: `linearis issues read <issueId>`
-   * 
+   *
    * Retrieves complete issue details including all relationships and comments
    * in a single optimized GraphQL query. Supports both UUID and TEAM-123 formats.
    */
@@ -195,7 +195,7 @@ export function setupIssuesCommands(program: Command): void {
             graphQLService,
             linearService,
           );
-          
+
           // Get issue with all relationships and comments
           const result = await issuesService.getIssueById(issueId);
           outputSuccess(result);
@@ -205,9 +205,9 @@ export function setupIssuesCommands(program: Command): void {
 
   /**
    * Update an issue
-   * 
+   *
    * Command: `linearis issues update <issueId> [options]`
-   * 
+   *
    * Updates issue properties including title, description, state, priority,
    * assignee, project, labels, and parent relationship. Supports both
    * label adding and overwriting modes.
@@ -220,7 +220,7 @@ export function setupIssuesCommands(program: Command): void {
     )
     .option("-t, --title <title>", "new title")
     .option("-d, --description <desc>", "new description")
-    .option("-s, --state <stateId>", "new state name or ID")
+    .option("-s, --status <status>", "new status name or ID")
     .option("-p, --priority <priority>", "new priority (1-4)")
     .option("--assignee <assigneeId>", "new assignee ID")
     .option("--project <project>", "new project (name or ID)")
@@ -240,13 +240,16 @@ export function setupIssuesCommands(program: Command): void {
     .optionsGroup("Project milestone-related options:")
     .option(
       "--project-milestone <milestone>",
-      "set project milestone (can use name or ID, will try to resolve within project context first)"
+      "set project milestone (can use name or ID, will try to resolve within project context first)",
     )
-    .option("--clear-project-milestone", "clear existing project milestone assignment")
+    .option(
+      "--clear-project-milestone",
+      "clear existing project milestone assignment",
+    )
     .optionsGroup("Cycle-related options:")
     .option(
       "--cycle <cycle>",
-      "set cycle (can use name or ID, will try to resolve within team context first)"
+      "set cycle (can use name or ID, will try to resolve within team context first)",
     )
     .option("--clear-cycle", "clear existing cycle assignment")
     .action(
@@ -326,7 +329,7 @@ export function setupIssuesCommands(program: Command): void {
             id: issueId, // GraphQL service handles ID resolution
             title: options.title,
             description: options.description,
-            stateId: options.state,
+            statusId: options.status,
             priority: options.priority ? parseInt(options.priority) : undefined,
             assigneeId: options.assignee,
             projectId: options.project, // GraphQL service handles project resolution

@@ -340,10 +340,10 @@ export class GraphQLIssuesService {
       }
     }
 
-    // Resolve state ID if provided and not a UUID
-    let resolvedStateId = args.stateId;
-    if (args.stateId && !isUuid(args.stateId)) {
-      // Get team ID from the issue for state context
+    // Resolve status ID if provided and not a UUID
+    let resolvedStatusId = args.statusId;
+    if (args.statusId && !isUuid(args.statusId)) {
+      // Get team ID from the issue for status context
       let teamId: string | undefined;
       if (resolvedIssueId && isUuid(resolvedIssueId)) {
         // We have the resolved issue ID, get the team context
@@ -357,8 +357,8 @@ export class GraphQLIssuesService {
         );
         teamId = issueResult.issue?.team?.id;
       }
-      resolvedStateId = await this.linearService.resolveStateId(
-        args.stateId,
+      resolvedStatusId = await this.linearService.resolveStatusId(
+        args.statusId,
         teamId,
       );
     }
@@ -370,7 +370,7 @@ export class GraphQLIssuesService {
     if (args.description !== undefined) {
       updateInput.description = args.description;
     }
-    if (resolvedStateId !== undefined) updateInput.stateId = resolvedStateId;
+    if (resolvedStatusId !== undefined) updateInput.stateId = resolvedStatusId;
     if (args.priority !== undefined) updateInput.priority = args.priority;
     if (args.assigneeId !== undefined) {
       updateInput.assigneeId = args.assigneeId;
@@ -418,7 +418,8 @@ export class GraphQLIssuesService {
     // Parse team if not a UUID
     if (args.teamId && !isUuid(args.teamId)) {
       // Check if it looks like a team key (short, usually 2-5 chars, alphanumeric)
-      const isTeamKey = args.teamId.length <= 5 && /^[A-Z0-9]+$/i.test(args.teamId);
+      const isTeamKey = args.teamId.length <= 5 &&
+        /^[A-Z0-9]+$/i.test(args.teamId);
       // IMPORTANT: Must explicitly set both teamKey and teamName (one to value, one to null)
       // Linear's GraphQL `or` filter with undefined variables matches incorrectly
       if (isTeamKey) {
@@ -586,11 +587,11 @@ export class GraphQLIssuesService {
       }
     }
 
-    // Resolve state ID if provided and not a UUID
-    let resolvedStateId = args.stateId;
-    if (args.stateId && !isUuid(args.stateId)) {
-      resolvedStateId = await this.linearService.resolveStateId(
-        args.stateId,
+    // Resolve status ID if provided and not a UUID
+    let resolvedStatusId = args.statusId;
+    if (args.statusId && !isUuid(args.statusId)) {
+      resolvedStatusId = await this.linearService.resolveStatusId(
+        args.statusId,
         finalTeamId,
       );
     }
@@ -605,7 +606,7 @@ export class GraphQLIssuesService {
     if (args.assigneeId) createInput.assigneeId = args.assigneeId;
     if (args.priority !== undefined) createInput.priority = args.priority;
     if (finalProjectId) createInput.projectId = finalProjectId;
-    if (resolvedStateId) createInput.stateId = resolvedStateId;
+    if (resolvedStatusId) createInput.stateId = resolvedStatusId;
     if (finalLabelIds && finalLabelIds.length > 0) {
       createInput.labelIds = finalLabelIds;
     }
@@ -752,9 +753,9 @@ export class GraphQLIssuesService {
           issue.project?.id === finalProjectId
         );
       }
-      if (args.states && args.states.length > 0) {
+      if (args.status && args.status.length > 0) {
         results = results.filter((issue: LinearIssue) =>
-          args.states!.includes(issue.state.name)
+          args.status!.includes(issue.state.name)
         );
       }
 
@@ -766,8 +767,8 @@ export class GraphQLIssuesService {
       if (finalTeamId) filter.team = { id: { eq: finalTeamId } };
       if (finalAssigneeId) filter.assignee = { id: { eq: finalAssigneeId } };
       if (finalProjectId) filter.project = { id: { eq: finalProjectId } };
-      if (args.states && args.states.length > 0) {
-        filter.state = { name: { in: args.states } };
+      if (args.status && args.status.length > 0) {
+        filter.state = { name: { in: args.status } };
       }
 
       const searchResult = await this.graphQLService.rawRequest(

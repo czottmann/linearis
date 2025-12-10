@@ -267,17 +267,17 @@ export class LinearService {
   }
 
   /**
-   * Resolve state name to state ID for a specific team
+   * Resolve status name to status ID for a specific team
    */
-  async resolveStateId(stateName: string, teamId?: string): Promise<string> {
+  async resolveStatusId(statusName: string, teamId?: string): Promise<string> {
     // Return UUID as-is
-    if (isUuid(stateName)) {
-      return stateName;
+    if (isUuid(statusName)) {
+      return statusName;
     }
 
     // Build filter for workflow states
     const filter: any = {
-      name: { eqIgnoreCase: stateName },
+      name: { eqIgnoreCase: statusName },
     };
 
     // If teamId is provided, filter by team
@@ -285,17 +285,17 @@ export class LinearService {
       filter.team = { id: { eq: teamId } };
     }
 
-    const states = await this.client.workflowStates({
+    const statuses = await this.client.workflowStates({
       filter,
       first: 1,
     });
 
-    if (states.nodes.length === 0) {
+    if (statuses.nodes.length === 0) {
       const context = teamId ? ` for team ${teamId}` : "";
-      throw new Error(`State "${stateName}"${context} not found`);
+      throw new Error(`Status "${statusName}"${context} not found`);
     }
 
-    return states.nodes[0].id;
+    return statuses.nodes[0].id;
   }
 
   /**

@@ -98,7 +98,7 @@ export interface CreateIssueArgs {
   assigneeId?: string;
   priority?: number;
   projectId?: string;
-  stateId?: string;
+  statusId?: string;
   labelIds?: string[];
   estimate?: number;
   parentId?: string;
@@ -110,7 +110,7 @@ export interface UpdateIssueArgs {
   id: string;
   title?: string;
   description?: string;
-  stateId?: string;
+  statusId?: string;
   priority?: number;
   assigneeId?: string;
   projectId?: string;
@@ -126,7 +126,7 @@ export interface SearchIssuesArgs {
   teamId?: string;
   assigneeId?: string;
   projectId?: string;
-  states?: string[];
+  status?: string[];
   limit?: number;
 }
 

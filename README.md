@@ -36,7 +36,7 @@ linearis issues create "Fix login timeout" --team Backend --assignee user123 \
 linearis issues read DEV-456
 
 # Update issue status and priority
-linearis issues update ABC-123 --state "In Review" --priority 2
+linearis issues update ABC-123 --status "In Review" --priority 2
 
 # Add labels to existing issue
 linearis issues update DEV-789 --labels "Frontend,UX" --label-by adding
