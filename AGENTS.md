@@ -12,17 +12,17 @@ Linearis is a CLI tool for Linear.app that outputs structured JSON data, designe
 
 ### Development
 
-- `pnpm start` - Run CLI in development mode using tsx (no compilation)
-- `pnpm run build` - Compile TypeScript to dist/ and make executable
-- `pnpm run clean` - Remove dist/ directory
+- `npm start` - Run CLI in development mode using tsx (no compilation)
+- `npm run build` - Compile TypeScript to dist/ and make executable
+- `npm run clean` - Remove dist/ directory
 - `node dist/main.js` - Run compiled production version
-- `pnpm test` - Run test suite (unit + integration tests)
+- `npm test` - Run test suite (unit + integration tests)
 
 ### Package Management
 
-- Uses `pnpm` (version 10.14.0) as the package manager
-- `pnpm install` - Install dependencies
-- `pnpm update` - Update dependencies
+- Uses `npm` as the package manager
+- `npm install` - Install dependencies
+- `npm update` - Update dependencies
 
 ## Architecture
 

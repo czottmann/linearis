@@ -207,7 +207,7 @@ issues.command("read <issueId>")
 
 ```bash
 # Run with TypeScript execution via tsx (development only)
-pnpm start issues list -l 5
+npm start issues list -l 5
 
 # Direct execution for debugging
 npx tsx src/main.ts --api-token <token> issues read ABC-123

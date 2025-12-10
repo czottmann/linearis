@@ -2,8 +2,7 @@
 
 # Performance Optimizations
 
-This document details the performance optimizations implemented in the Linear
-CLI tool.
+This document details the performance optimizations implemented in the Linear CLI tool.
 
 ## Performance Problems Identified
 
@@ -19,8 +18,7 @@ The initial implementation suffered from a classic N+1 query problem:
    - 1 query for project information
    - 1 query for labels information
 
-**Result**: For 10 issues, this resulted in 1 + (10 × 5) = 51 API calls, taking
-10+ seconds.
+**Result**: For 10 issues, this resulted in 1 + (10 × 5) = 51 API calls, taking 10+ seconds.
 
 ## Solutions Implemented
 
@@ -95,8 +93,7 @@ fragment CompleteIssue on Issue {
 }
 ```
 
-All issue operations use shared fragments to ensure consistent, complete data
-fetching without redundant queries.
+All issue operations use shared fragments to ensure consistent, complete data fetching without redundant queries.
 
 ## Performance Results
 
@@ -115,27 +112,27 @@ All tests performed with real Linear API:
 
 ```bash
 # Single issue read
-time pnpm start issues read ABC-123
+time npm start issues read ABC-123
 
 # List issues  
-time pnpm start issues list -l 10
+time npm start issues list -l 10
 
 # Create issue
-time pnpm start issues create --title "Test" --team ABC
+time npm start issues create --title "Test" --team ABC
 
 # Search issues
-time pnpm start issues search "test" --team ABC
+time npm start issues search "test" --team ABC
 ```
 
 ### Real-World Performance
 
-Example output from `time pnpm start issues list -l 1`:
+Example output from `time npm start issues list -l 1`:
 
 ```
-pnpm start issues list -l 1 < /dev/null  0.62s user 0.08s system 77% cpu 0.904 total
+npm start issues list -l 1 < /dev/null  0.62s user 0.08s system 77% cpu 0.904 total
 ```
 
-**Total time: 0.904 seconds** (including pnpm overhead and Node.js startup)
+**Total time: 0.904 seconds** (including npm overhead and Node.js startup)
 
 ## Technical Implementation Details
 
@@ -143,25 +140,19 @@ pnpm start issues list -l 1 < /dev/null  0.62s user 0.08s system 77% cpu 0.904 t
 
 The GraphQL optimizations are implemented in:
 
-- **src/utils/graphql-service.ts** - GraphQL client wrapper with batch
-  operations
-- **src/utils/graphql-issues-service.ts** - Single-query issue operations (lines
-  32-536)
+- **src/utils/graphql-service.ts** - GraphQL client wrapper with batch operations
+- **src/utils/graphql-issues-service.ts** - Single-query issue operations (lines 32-536)
 - **src/queries/issues.ts** - Optimized GraphQL queries and fragments
-- **src/queries/common.ts** - Reusable query fragments for consistent data
-  fetching
+- **src/queries/common.ts** - Reusable query fragments for consistent data fetching
 - **src/commands/issues.ts** - Enhanced commands using GraphQL service
 
 ### Key Performance Patterns
 
-1. **Single GraphQL Queries**: Replace N+1 patterns with comprehensive single
-   queries
+1. **Single GraphQL Queries**: Replace N+1 patterns with comprehensive single queries
 2. **Batch ID Resolution**: Resolve multiple identifiers in single operations
 3. **Fragment Reuse**: Use consistent GraphQL fragments across operations
-4. **Smart Caching**: Leverage GraphQL response structure for efficient data
-   handling
-5. **Lightweight Operations**: Use minimal queries for simple operations like
-   comment creation
+4. **Smart Caching**: Leverage GraphQL response structure for efficient data handling
+5. **Lightweight Operations**: Use minimal queries for simple operations like comment creation
 
 ## Monitoring Performance
 
@@ -182,11 +173,9 @@ time linearis issues search "bug" --team ABC
 
 Potential areas for further improvement:
 
-1. **Caching**: Implement local caching for frequently accessed data (teams,
-   users, labels)
+1. **Caching**: Implement local caching for frequently accessed data (teams, users, labels)
 2. **Connection Pooling**: Optimize HTTP connections to Linear's GraphQL API
-3. **Pagination Optimization**: Stream large result sets instead of loading all
-   at once
+3. **Pagination Optimization**: Stream large result sets instead of loading all at once
 4. **Background Prefetching**: Pre-load common data in background
 
 ## Impact
@@ -198,5 +187,4 @@ The performance optimizations provide:
 - **Reduced API load** on Linear's servers
 - **More efficient** resource utilization
 
-These improvements make the CLI suitable for real-time use and integration into
-automated workflows.
+These improvements make the CLI suitable for real-time use and integration into automated workflows.

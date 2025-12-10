@@ -30,7 +30,7 @@ All source files use modern ES modules with TypeScript for type safety. The proj
 
 ### Package Management
 
-**package.json** - Project configuration with dependencies (@linear/sdk, commander, tsx), scripts, and Node.js >= 22.0.0 requirement **pnpm-lock.yaml** - Dependency lock file ensuring reproducible builds with exact versions **mise.toml** - Development environment configuration with Node.js 22 and Deno 2.2.8 tool versions
+**package.json** - Project configuration with dependencies (@linear/sdk, commander, tsx), scripts, and Node.js >= 22.0.0 requirement **package-lock.json** - Dependency lock file ensuring reproducible builds with exact versions **mise.toml** - Development environment configuration with Node.js 22 and Deno 2.2.8 tool versions
 
 ### Documentation and Specifications
 
@@ -95,10 +95,10 @@ All source files use modern ES modules with TypeScript for type safety. The proj
 
 **Development Scripts** - package.json scripts section:
 
-- `pnpm start` executes tsx src/main.ts for development
+- `npm start` executes tsx src/main.ts for development
 - `npm run build` compiles to executable dist/main.js
 - `npm run clean` removes compiled dist/ directory
-- No test framework configured (pnpm test returns error)
+- `npm test` runs the test suite
 
 ### Dependencies Structure
 

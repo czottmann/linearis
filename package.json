@@ -43,7 +43,6 @@
     "url": "https://github.com/czottmann/linearis/issues"
   },
   "homepage": "https://github.com/czottmann/linearis#readme",
-  "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@linear/sdk": "^58.1.0",
     "commander": "^14.0.0"

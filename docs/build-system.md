@@ -2,14 +2,9 @@
 
 # Build System
 
-Linearis uses a TypeScript compilation-based build system optimized
-for both development productivity and production performance. The project
-features automatic builds during installation, and cross-platform clean scripts.
+Linearis uses a TypeScript compilation-based build system optimized for both development productivity and production performance. The project features automatic builds during installation, and cross-platform clean scripts.
 
-The build system leverages TypeScript's compiler for production builds while
-maintaining tsx for development convenience. All builds output to the dist/
-directory with automated preparation during npm install, ensuring consistent
-deployment across platforms.
+The build system leverages TypeScript's compiler for production builds while maintaining tsx for development convenience. All builds output to the dist/ directory with automated preparation during npm install, ensuring consistent deployment across platforms.
 
 ## Build Workflows
 
@@ -41,7 +36,7 @@ npm run clean
 **Development Command** - package.json (line 14):
 
 ```bash
-pnpm start <command>
+npm start <command>
 # Executes: tsx src/main.ts <command>
 ```
 
@@ -53,11 +48,11 @@ node dist/main.js <command>
 
 ### Package Management Workflows
 
-**Installation with Build** - Using pnpm 10.20.0 (package.json line 23):
+**Installation with Build**:
 
 ```bash
-pnpm install  # Install dependencies and automatically build
-pnpm update   # Update to latest versions within constraints
+npm install  # Install dependencies and automatically build
+npm update   # Update to latest versions within constraints
 ```
 
 **Dependency Management**
@@ -100,28 +95,27 @@ mise use         # Activate configured tool versions
 
 ### Package Manager Lock
 
-**Reproducible Builds** - pnpm-lock.yaml
+**Reproducible Builds** - package-lock.json
 
 - Exact dependency versions locked for consistent installations
-- pnpm 10.20.0 specified as required package manager
 
 ## Reference
 
 ### Build Targets and Commands
 
-| Command         | File Reference       | Purpose                                      |
-| --------------- | -------------------- | -------------------------------------------- |
-| `npm run build` | package.json line 11 | Compile TypeScript to JavaScript (tsc)      |
-| `npm run clean` | package.json line 12 | Remove dist/ directory (cross-platform)     |
-| `npm run prepare` | package.json line 13 | Auto-build during install (clean + build)   |
-| `pnpm start`    | package.json line 14 | Development execution with tsx               |
-| `pnpm test`     | package.json line 15 | Test command (not implemented)               |
+| Command           | File Reference       | Purpose                                   |
+| ----------------- | -------------------- | ----------------------------------------- |
+| `npm run build`   | package.json line 11 | Compile TypeScript to JavaScript (tsc)    |
+| `npm run clean`   | package.json line 12 | Remove dist/ directory (cross-platform)   |
+| `npm run prepare` | package.json line 13 | Auto-build during install (clean + build) |
+| `npm start`       | package.json line 14 | Development execution with tsx            |
+| `npm test`        | package.json line 15 | Run test suite                            |
 
 ### Configuration Files
 
 - **package.json** - Main project configuration with dependencies, scripts, and binary setup
 - **tsconfig.json** - TypeScript compilation configuration targeting ES2023
-- **pnpm-lock.yaml** - Dependency lock file for reproducible builds  
+- **package-lock.json** - Dependency lock file for reproducible builds
 - **mise.toml** - Development environment tool versions
 
 ### Troubleshooting Build Issues

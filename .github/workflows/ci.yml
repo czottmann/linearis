@@ -19,25 +19,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.20.0
-
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
+          cache: "npm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build project
-        run: pnpm run build
+        run: npm run build
 
       - name: Run tests
-        run: pnpm test
+        run: npm test
 
   lint:
     name: Lint and Type Check
@@ -47,22 +42,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.20.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: "pnpm"
+          cache: "npm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: TypeScript type check
-        run: pnpm run build
+        run: npm run build
 
       - name: Check for TypeScript errors
-        run: pnpm exec tsc --noEmit
+        run: npx tsc --noEmit

@@ -156,8 +156,8 @@ npm install -g linearis
 ```bash
 git clone https://github.com/czottmann/linearis.git
 cd linearis
-pnpm install
-pnpm build
+npm install
+npm run build
 npm link
 ```
 
@@ -166,8 +166,8 @@ npm link
 ```bash
 git clone https://github.com/czottmann/linearis.git
 cd linearis
-pnpm install
-pnpm start  # Development mode using tsx (no compilation needed)
+npm install
+npm start  # Development mode using tsx (no compilation needed)
 ```
 
 ## Authentication

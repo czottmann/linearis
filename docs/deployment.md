@@ -2,16 +2,9 @@
 
 # Deployment
 
-Linearis deploys as a compiled Node.js application with automatic
-builds during installation.
-Distribution supports npm packages, git-based installation, and standalone
-executables with automated TypeScript compilation ensuring consistency across
-platforms.
+Linearis deploys as a compiled Node.js application with automatic builds during installation. Distribution supports npm packages, git-based installation, and standalone executables with automated TypeScript compilation ensuring consistency across platforms.
 
-The deployment strategy leverages npm's prepare script for automatic builds,
-compiled JavaScript for production performance, and cross-platform clean
-scripts for reliable distribution. All installations automatically compile
-TypeScript to optimized JavaScript in the dist/ directory.
+The deployment strategy leverages npm's prepare script for automatic builds, compiled JavaScript for production performance, and cross-platform clean scripts for reliable distribution. All installations automatically compile TypeScript to optimized JavaScript in the dist/ directory.
 
 ## Package Types
 
@@ -30,7 +23,7 @@ npm install git+https://github.com/czottmann/linearis.git
 ```bash
 git clone <repository>
 cd linearis
-pnpm install  # Auto-builds via prepare script
+npm install  # Auto-builds via prepare script
 ```
 
 **Global CLI Access** - package.json (lines 5, 8):
@@ -84,7 +77,7 @@ mise install  # Installs Node.js 22 and Deno 2.2.8
 ```bash
 # Minimal production setup
 node --version  # Verify >= 22.0.0
-pnpm --version  # Verify pnpm available
+npm --version   # Verify npm available
 ```
 
 ### Container Deployment
@@ -94,7 +87,7 @@ pnpm --version  # Verify pnpm available
 ```dockerfile
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json pnpm-lock.yaml tsconfig.json ./
+COPY package.json package-lock.json tsconfig.json ./
 COPY src/ ./src/
 RUN npm install  # Auto-builds via prepare script
 ENTRYPOINT ["node", "dist/main.js"]
@@ -106,12 +99,12 @@ ENTRYPOINT ["node", "dist/main.js"]
 
 **Installation Commands**:
 
-| Command         | Purpose                              | File Reference             |
-| --------------- | ------------------------------------ | -------------------------- |
-| `npm install`   | Install + auto-build via prepare    | package.json scripts       |
-| `npm run build` | Manual TypeScript compilation        | package.json line 11       |
-| `npm link`      | Global CLI access (compiled)         | package.json bin field     |
-| `node dist/main.js` | Direct production execution      | Compiled output            |
+| Command             | Purpose                          | File Reference         |
+| ------------------- | -------------------------------- | ---------------------- |
+| `npm install`       | Install + auto-build via prepare | package.json scripts   |
+| `npm run build`     | Manual TypeScript compilation    | package.json line 11   |
+| `npm link`          | Global CLI access (compiled)     | package.json bin field |
+| `node dist/main.js` | Direct production execution      | Compiled output        |
 
 ### Distribution Formats
 
@@ -131,7 +124,7 @@ ENTRYPOINT ["node", "dist/main.js"]
 
 - **package.json** - Dependencies, scripts, binary configuration, and prepare script
 - **tsconfig.json** - TypeScript compilation settings for production build
-- **pnpm-lock.yaml** - Exact dependency versions for reproducible builds
+- **package-lock.json** - Exact dependency versions for reproducible builds
 - **dist/main.js** - Compiled entry point for production execution
 
 **Environment Configuration**:

@@ -15,19 +15,19 @@ Testing approach combines multiple strategies:
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Run all tests
-pnpm test
+npm test
 
 # Run tests in watch mode
-pnpm test:watch
+npm test:watch
 
 # Run with UI
-pnpm test:ui
+npm test:ui
 
 # Generate coverage report
-pnpm test:coverage
+npm test:coverage
 ```
 
 ## Test Structure
@@ -47,29 +47,29 @@ tests/
 
 ```bash
 # Run all tests once
-pnpm test
+npm test
 
 # Run in watch mode (re-runs on changes)
-pnpm test:watch
+npm test:watch
 
 # Run with interactive UI
-pnpm test:ui
+npm test:ui
 ```
 
 ### Specific Test Suites
 
 ```bash
 # Unit tests only
-pnpm vitest run tests/unit
+npx vitest run tests/unit
 
 # Integration tests only
-pnpm vitest run tests/integration
+npx vitest run tests/integration
 
 # Specific test file
-pnpm vitest run tests/unit/linear-service-cycles.test.ts
+npx vitest run tests/unit/linear-service-cycles.test.ts
 
 # Run single test by name
-pnpm vitest run -t "should fetch cycles without filters"
+npx vitest run -t "should fetch cycles without filters"
 ```
 
 ## Unit Tests
@@ -79,7 +79,7 @@ Unit tests verify individual functions and methods in isolation using mocks to a
 ### Example: Testing LinearService
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LinearService } from "../../src/utils/linear-service.js";
 
 describe("LinearService - getCycles()", () => {
@@ -94,7 +94,7 @@ describe("LinearService - getCycles()", () => {
 
   it("should fetch cycles without filters", async () => {
     mockClient.cycles.mockResolvedValue({
-      nodes: [{ id: "cycle-1", name: "Sprint 1" }]
+      nodes: [{ id: "cycle-1", name: "Sprint 1" }],
     });
 
     const result = await service.getCycles();
@@ -109,10 +109,10 @@ describe("LinearService - getCycles()", () => {
 
 ```bash
 # Run all unit tests
-pnpm vitest run tests/unit
+npx vitest run tests/unit
 
 # Watch mode for development
-pnpm vitest tests/unit
+npx vitest tests/unit
 ```
 
 **No API token required** - unit tests use mocks and run offline.
@@ -130,10 +130,10 @@ Integration tests require a Linear API token:
 export LINEAR_API_TOKEN="lin_api_..."
 
 # Build the CLI first
-pnpm run build
+npm run build
 
 # Run integration tests
-pnpm vitest run tests/integration
+npx vitest run tests/integration
 ```
 
 If `LINEAR_API_TOKEN` is not set, integration tests are automatically skipped.
@@ -141,7 +141,7 @@ If `LINEAR_API_TOKEN` is not set, integration tests are automatically skipped.
 ### Example: Testing CLI Commands
 
 ```typescript
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -151,7 +151,7 @@ const hasApiToken = !!process.env.LINEAR_API_TOKEN;
 describe("Cycles CLI", () => {
   it.skipIf(!hasApiToken)("should list cycles", async () => {
     const { stdout, stderr } = await execAsync(
-      "node ./dist/main.js cycles list"
+      "node ./dist/main.js cycles list",
     );
 
     // Verify no complexity errors (PR #4 bug fix)
@@ -172,10 +172,11 @@ Generate code coverage reports to track which source code lines are executed:
 
 ```bash
 # Run tests with coverage
-pnpm test:coverage
+npm test:coverage
 ```
 
 Coverage reports generated:
+
 - `coverage/index.html` - Visual HTML report
 - `coverage/coverage-final.json` - JSON data
 
@@ -193,10 +194,11 @@ See which CLI commands have integration test coverage:
 
 ```bash
 # Run command coverage report
-pnpm test:commands
+npm test:commands
 ```
 
 This shows:
+
 - ✅ Which commands have integration tests
 - ⚠️ Which commands need testing
 - 📊 Overall % of commands covered
@@ -231,12 +233,14 @@ Tests run automatically on every push and pull request via GitHub Actions.
 ### CI Workflow (`.github/workflows/ci.yml`)
 
 **Test Job**:
-1. Installs dependencies with pnpm
+
+1. Installs dependencies with npm
 2. Builds the project
 3. Runs all tests
 4. Runs integration tests if `LINEAR_API_TOKEN` secret is configured
 
 **Lint Job**:
+
 1. Type checks with TypeScript
 2. Verifies clean build
 
@@ -298,6 +302,7 @@ Tests for command naming fix:
 ### When to Write Unit Tests
 
 Write unit tests for:
+
 - Complex business logic
 - Data transformations
 - Error handling
@@ -306,6 +311,7 @@ Write unit tests for:
 ### When to Write Integration Tests
 
 Write integration tests for:
+
 - New CLI commands
 - New command flags
 - Critical user workflows
@@ -346,39 +352,39 @@ While automated tests are preferred, some scenarios still require manual testing
 
 ```bash
 # Test issue listing
-pnpm start issues list -l 5
+npm start issues list -l 5
 
 # Test issue reading with ID resolution
-pnpm start issues read ABC-123
+npm start issues read ABC-123
 
 # Test issue creation
-pnpm start issues create --title "Test Issue" --team ABC
+npm start issues create --title "Test Issue" --team ABC
 
 # Test issue search with filters
-pnpm start issues search "bug" --team ABC --project "Mobile App"
+npm start issues search "bug" --team ABC --project "Mobile App"
 ```
 
 ### Project Operations
 
 ```bash
 # Test project listing
-pnpm start projects list
+npm start projects list
 
 # Test project reading with name resolution
-pnpm start projects read "Mobile App"
+npm start projects read "Mobile App"
 ```
 
 ### Authentication Testing
 
 ```bash
 # Test with API token flag
-pnpm start --api-token <token> issues list
+npm start --api-token <token> issues list
 
 # Test with environment variable
-LINEAR_API_TOKEN=<token> pnpm start issues list
+LINEAR_API_TOKEN=<token> npm start issues list
 
 # Test with token file
-echo "<token>" > ~/.linear_api_token && pnpm start issues list
+echo "<token>" > ~/.linear_api_token && npm start issues list
 ```
 
 ## Performance Testing
@@ -389,16 +395,16 @@ Performance benchmarks from PERFORMANCE.md:
 
 ```bash
 # Time command execution
-time pnpm start issues list -l 10
+time npm start issues list -l 10
 
 # Monitor single issue performance
-time pnpm start issues read ABC-123
+time npm start issues read ABC-123
 
 # Test search performance
-time pnpm start issues search "test" --team ABC
+time npm start issues search "test" --team ABC
 
 # Cycles performance test (PR #4 fix verification)
-time pnpm start cycles list --team Backend
+time npm start cycles list --team Backend
 ```
 
 ### Current Benchmarks
@@ -412,7 +418,7 @@ time pnpm start cycles list --team Backend
 ### Run with Verbose Output
 
 ```bash
-pnpm vitest run --reporter=verbose
+npx vitest run --reporter=verbose
 ```
 
 ### Debug in VS Code
@@ -424,7 +430,7 @@ Add to `.vscode/launch.json`:
   "type": "node",
   "request": "launch",
   "name": "Debug Vitest Tests",
-  "runtimeExecutable": "pnpm",
+  "runtimeExecutable": "npx",
   "runtimeArgs": ["vitest", "run", "--no-coverage"],
   "console": "integratedTerminal",
   "internalConsoleOptions": "neverOpen"
@@ -440,7 +446,7 @@ Set breakpoints in test files and press F5 to debug.
 Ensure project is built:
 
 ```bash
-pnpm run build
+npm run build
 ```
 
 ### Integration Tests Skipped
@@ -489,10 +495,12 @@ import { LinearService } from "../../src/utils/linear-service.js";
 ## Test Coverage Goals
 
 Current coverage (as of PR #4):
+
 - Unit tests: LinearService cycle methods
 - Integration tests: Cycles and project-milestones commands
 
 Future coverage goals:
+
 - Authentication flows (src/utils/auth.ts)
 - Smart ID resolution (src/utils/linear-service.ts)
 - All command handlers (src/commands/*.ts)
