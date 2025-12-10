@@ -231,8 +231,9 @@ I don't accept sponsoring in the "GitHub sponsorship" sense[^1] but [next to my 
 
 ## Contributors 🤙🏼
 
-- [ryanrozich (Ryan Rozich)](https://github.com/ryanrozich)
-- [chadrwalters (Chad Walters)](https://github.com/chadrwalters)
+- [Ryan Rozich](https://github.com/ryanrozich)
+- [Chad Walters](https://github.com/chadrwalters)
+- [Louis Mandelstam](https://github.com/man8)
 
 ## Documentation
 
