@@ -11,11 +11,21 @@ All notable changes to this project will be documented in this file. The format 
 - `issues` commands now include the `branchName` field (the git branch name associated with the issue). [#14](https://github.com/czottmann/linearis/issues/14) <!-- ZCO-1629 -->
 - Diagnostic output for issue transform errors, showing raw API response and stack trace to help debug null field issues. [#6](https://github.com/czottmann/linearis/issues/6) <!-- ZCO-1630 -->
 
+### Breaking Changes
+
+- **Issue "status" flag renamed**: `--state`/`--states` options renamed to `--status` for consistency with Linear's UI terminology. Thanks for the (appreciated but ultimately unused) PR, [@ralfschimmel](https://github.com/ralfschimmel)! <!-- ZCO-1641 -->
+  - `issues search --states` → `--status` (still accepts comma-separated values)
+  - `issues update --state` → `--status` (short flag `-s` unchanged)
+
+---
+
 ## [2025.11.3] - 2025-11-20
+
+[2025.11.3]: https://github.com/czottmann/linearis/compare/2025.11.2...2025.11.3
 
 ### Added
 
-- New `teams` command with `list` subcommand 🎉 – thanks, [Chad](https://github.com/chadrwalters)! [PR#13](https://github.com/czottmann/linearis/pull/13)
+- New `teams` command with `list` subcommand 🎉 – thanks, [@chadrwalters](https://github.com/chadrwalters)! [PR#13](https://github.com/czottmann/linearis/pull/13)
   - Lists all teams in workspace with id, key, name, and description
   - Results sorted alphabetically by name
 - New `users` command with `list` subcommand [PR#13](https://github.com/czottmann/linearis/pull/13)
@@ -34,7 +44,11 @@ All notable changes to this project will be documented in this file. The format 
 - Added "Teams & Users" section to README.md with usage examples
 - Updated docs/architecture.md, docs/development.md, and docs/files.md to reference new commands
 
+---
+
 ## [2025.11.2] - 2025-11-11
+
+[2025.11.2]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
 
 ### Added
 
@@ -52,7 +66,11 @@ All notable changes to this project will be documented in this file. The format 
 - All date/time fields now output in ISO 8601 format (`2025-11-09T23:00:00.000Z`) instead of verbose JavaScript date strings <!-- ZCO-1577 -->
 - Under-the-hood stability bug fixes.
 
+---
+
 ## [2025.11.1] - 2025-11-06
+
+[2025.11.1]: https://github.com/czottmann/linearis/compare/1.1.0...2025.11.1
 
 ### Added
 
@@ -75,7 +93,11 @@ All notable changes to this project will be documented in this file. The format 
 - Updated docs/files.md with new command and utility files
 - Added embeds command flow and extraction flow diagrams to documentation
 
+---
+
 ## [1.1.0] - 2025-10-21
+
+[1.1.0]: https://github.com/czottmann/linearis/compare/1.0.0...1.1.0
 
 ### Fixes
 
@@ -85,14 +107,12 @@ All notable changes to this project will be documented in this file. The format 
 
 - Added section "Example rule for your LLM agent of choice" to README
 
+---
+
 ## [1.0.0] - 2025-10-21
+
+[1.0.0]: https://github.com/czottmann/linearis/releases/tag/1.0.0
 
 ### Added
 
 - Initial release of Linearis CLI tool
-
-[2025.11.3]: https://github.com/czottmann/linearis/compare/2025.11.2...2025.11.3
-[2025.11.2]: https://github.com/czottmann/linearis/compare/2025.11.1...2025.11.2
-[2025.11.1]: https://github.com/czottmann/linearis/compare/1.1.0...2025.11.1
-[1.1.0]: https://github.com/czottmann/linearis/compare/1.0.0...1.1.0
-[1.0.0]: https://github.com/czottmann/linearis/releases/tag/1.0.0
