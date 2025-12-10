@@ -21,7 +21,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:commands": "tsx tests/command-coverage.ts",
-    "prepublishOnly": "npm run build && npm run test"
+    "prepublishOnly": "npm run build && npm run test && test -x dist/main.js"
   },
   "engines": {
     "node": ">=22.0.0"

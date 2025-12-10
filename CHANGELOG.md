@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file. The format 
   - `issues search --states` → `--status` (still accepts comma-separated values)
   - `issues update --state` → `--status` (short flag `-s` unchanged)
 
+### Tooling
+
+- Prepublish validation to ensure `dist/main.js` exists and is executable before publishing to npm <!-- ZCO-1604 -->
+
 ---
 
 ## [2025.11.3] - 2025-11-20
