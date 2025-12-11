@@ -5,24 +5,26 @@ import { FileService } from "../utils/file-service.js";
 
 /**
  * Setup embeds commands on the program
- * 
- * Registers `embeds` command group for downloading embedded files
- * from Linear's private cloud storage. Handles file download operations
- * with authentication and error reporting.
- * 
+ *
+ * Registers `embeds` command group for uploading and downloading embedded files
+ * from Linear's private cloud storage. Handles file operations with
+ * authentication and error reporting.
+ *
  * @param program - Commander.js program instance to register commands on
- * 
+ *
  * @example
  * ```typescript
  * // In main.ts
  * setupEmbedsCommands(program);
- * // Enables: linearis embeds download <url> [--output path] [--overwrite]
+ * // Enables:
+ * //   linearis embeds upload <file>
+ * //   linearis embeds download <url> [--output path] [--overwrite]
  * ```
  */
 export function setupEmbedsCommands(program: Command): void {
   const embeds = program
     .command("embeds")
-    .description("Download embedded files from Linear storage.");
+    .description("Upload and download files from Linear storage.");
 
   // Show embeds help when no subcommand
   embeds.action(() => {
@@ -65,6 +67,51 @@ export function setupEmbedsCommands(program: Command): void {
             });
           } else {
             // Include status code for debugging authentication issues
+            const error: any = {
+              success: false,
+              error: result.error,
+            };
+            if (result.statusCode) {
+              error.statusCode = result.statusCode;
+            }
+            outputSuccess(error);
+          }
+        },
+      ),
+    );
+
+  /**
+   * Upload file to Linear storage
+   *
+   * Command: `linearis embeds upload <file>`
+   *
+   * Uploads a local file to Linear's cloud storage using the fileUpload
+   * GraphQL mutation. Returns the asset URL which can be used in markdown
+   * for comments, descriptions, etc.
+   */
+  embeds
+    .command("upload <file>")
+    .description("Upload a file to Linear storage.")
+    .action(
+      handleAsyncCommand(
+        async (filePath: string, _options: any, command: Command) => {
+          // Get API token from parent command options for authentication
+          const apiToken = await getApiToken(command.parent!.parent!.opts());
+
+          // Create file service and initiate upload
+          const fileService = new FileService(apiToken);
+          const result = await fileService.uploadFile(filePath);
+
+          if (result.success) {
+            // Successful upload with asset URL
+            outputSuccess({
+              success: true,
+              assetUrl: result.assetUrl,
+              filename: result.filename,
+              message: `File uploaded successfully: ${result.assetUrl}`,
+            });
+          } else {
+            // Include status code for debugging
             const error: any = {
               success: false,
               error: result.error,
