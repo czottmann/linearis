@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
-## [2025.12.1]
+## [2025.12.2]
 
 ### Added
 
