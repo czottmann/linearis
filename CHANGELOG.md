@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [2025.12.2]
 
+[2025.12.2]: https://github.com/czottmann/linearis/compare/2025.11.3...2025.12.2
+
 ### Added
 
 - New `embeds upload` command to upload files to Linear storage – thanks, [@chadrwalters](https://github.com/chadrwalters)! [PR#23](https://github.com/czottmann/linearis/pull/23)
