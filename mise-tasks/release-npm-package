@@ -221,7 +221,7 @@ else
 end
 or error "Failed to stage files"
 
-git commit -m "[CHORE] Release $new_version"
+git commit -m "chore: Release $new_version"
 or error "Failed to create commit"
 
 success "Commit created"
