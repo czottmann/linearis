@@ -14,7 +14,11 @@ import { access, mkdir, readFile, stat, writeFile } from "fs/promises";
 import { basename, dirname, extname } from "path";
 import { extractFilenameFromUrl, isLinearUploadUrl } from "./embed-parser.js";
 
-/** Maximum file size for uploads (20MB) */
+/**
+ * Maximum file size for uploads (20MB)
+ * This limit is imposed by Linear's fileUpload API.
+ * See: https://linear.app/developers/graphql/fileupload
+ */
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 /**
@@ -302,7 +306,7 @@ export class FileService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: this.apiToken,
+          Authorization: `Bearer ${this.apiToken}`,
         },
         body: JSON.stringify({
           query,

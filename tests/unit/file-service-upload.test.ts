@@ -77,7 +77,7 @@ describe("FileService - uploadFile", () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
       const graphqlCall = mockFetch.mock.calls[0];
       expect(graphqlCall[0]).toBe("https://api.linear.app/graphql");
-      expect(graphqlCall[1].headers["Authorization"]).toBe(testApiToken);
+      expect(graphqlCall[1].headers["Authorization"]).toBe(`Bearer ${testApiToken}`);
 
       // Verify PUT call
       const putCall = mockFetch.mock.calls[1];

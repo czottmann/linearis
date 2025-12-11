@@ -94,7 +94,7 @@ export function setupEmbedsCommands(program: Command): void {
     .description("Upload a file to Linear storage.")
     .action(
       handleAsyncCommand(
-        async (filePath: string, options: any, command: Command) => {
+        async (filePath: string, _options: any, command: Command) => {
           // Get API token from parent command options for authentication
           const apiToken = await getApiToken(command.parent!.parent!.opts());
 
