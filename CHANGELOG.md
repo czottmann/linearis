@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- New `embeds upload` command to upload files to Linear storage – thanks, [@chadrwalters](https://github.com/chadrwalters)! [PR#23](https://github.com/czottmann/linearis/pull/23)
+- New `documents` commands for Linear document management – thanks, [@ralfschimmel](https://github.com/ralfschimmel)! [PR#21](https://github.com/czottmann/linearis/pull/21)
 - `issues` commands now include the `branchName` field (the git branch name associated with the issue). [#14](https://github.com/czottmann/linearis/issues/14) <!-- ZCO-1629 -->
 - Diagnostic output for issue transform errors, showing raw API response and stack trace to help debug null field issues. [#6](https://github.com/czottmann/linearis/issues/6) <!-- ZCO-1630 -->
 
@@ -20,6 +22,7 @@ All notable changes to this project will be documented in this file. The format 
 ### Tooling
 
 - Prepublish validation to ensure `dist/main.js` exists and is executable before publishing to npm <!-- ZCO-1604 -->
+- Cleaned up the tiny `pnpm` vs `npm` mess, it's now `npm` all the things <!-- ZCO-1603 -->
 
 ---
 
