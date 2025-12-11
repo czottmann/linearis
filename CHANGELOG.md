@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [2025.12.2]
 
-[2025.12.2]: https://github.com/czottmann/linearis/compare/2025.11.3...2025.12.2
+[2025.12.2]: https://github.com/czottmann/linearis/compare/v2025.11.3...v2025.12.2
 
 ### Added
 
@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [2025.11.3] - 2025-11-20
 
-[2025.11.3]: https://github.com/czottmann/linearis/compare/2025.11.2...2025.11.3
+[2025.11.3]: https://github.com/czottmann/linearis/compare/2025.11.2...v2025.11.3
 
 ### Added
 
