@@ -35,3 +35,7 @@ test-*.sh
 
 # Temp files etc.
 tmp/
+
+# Beans
+.beans/
+.beans.yml
