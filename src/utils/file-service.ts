@@ -37,11 +37,13 @@ const MIME_TYPES: Record<string, string> = {
   // Documents
   ".pdf": "application/pdf",
   ".doc": "application/msword",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ".xls": "application/vnd.ms-excel",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".ppt": "application/vnd.ms-powerpoint",
-  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".pptx":
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   // Text
   ".txt": "text/plain",
   ".csv": "text/csv",
@@ -115,7 +117,7 @@ export class FileService {
 
   /**
    * Initialize file service with authentication token
-   * 
+   *
    * @param apiToken - Linear API token for authentication
    */
   constructor(apiToken: string) {
@@ -124,21 +126,21 @@ export class FileService {
 
   /**
    * Downloads a file from Linear's private cloud storage.
-   * 
+   *
    * Automatically handles authentication for Linear URLs and creates directories
    * as needed. Detects signed URLs to skip Bearer token authentication.
-   * 
+   *
    * @param url - URL to Linear file (uploads.linear.app domain)
    * @param options - Download options including output path and overwrite behavior
    * @returns Download result with success status, file path, or error details
-   * 
+   *
    * @example
    * ```typescript
    * const result = await fileService.downloadFile(
    *   "https://uploads.linear.app/abc/file.png",
    *   { output: "screenshots/image.png", overwrite: true }
    * );
-   * 
+   *
    * if (result.success) {
    *   console.log(`Downloaded to: ${result.filePath}`);
    * } else {
@@ -268,7 +270,9 @@ export class FileService {
     } catch (error) {
       return {
         success: false,
-        error: `Cannot read file: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Cannot read file: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       };
     }
 
@@ -277,7 +281,9 @@ export class FileService {
       const actualMB = fileSize / (1024 * 1024);
       return {
         success: false,
-        error: `File too large: ${actualMB.toFixed(1)}MB exceeds limit of ${maxMB}MB`,
+        error: `File too large: ${
+          actualMB.toFixed(1)
+        }MB exceeds limit of ${maxMB}MB`,
       };
     }
 
@@ -306,7 +312,7 @@ export class FileService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiToken}`,
+          Authorization: this.apiToken,
         },
         body: JSON.stringify({
           query,
