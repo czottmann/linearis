@@ -69,6 +69,46 @@ linearis embeds download "https://uploads.linear.app/.../file.png?signature=..."
 linearis embeds download "https://uploads.linear.app/.../file.png?signature=..." --output ./screenshot.png --overwrite
 ```
 
+### File Uploads
+
+```bash
+# Upload a file to Linear storage
+linearis embeds upload ./screenshot.png
+# Returns: { "success": true, "assetUrl": "https://uploads.linear.app/...", "filename": "screenshot.png" }
+
+# Use with comments
+URL=$(linearis embeds upload ./bug.png | jq -r .assetUrl)
+linearis comments create ABC-123 --body "See attached: ![$URL]($URL)"
+```
+
+### Documents
+
+Linear Documents are standalone markdown files that can be associated with projects or teams. Use `--attach-to` to link documents to issues.
+
+```bash
+# Create a document
+linearis documents create --title "API Design" --content "# Overview\n\nThis document..."
+
+# Create document in a project and attach to an issue
+linearis documents create --title "Bug Analysis" --project "Backend" --attach-to ABC-123
+
+# List all documents
+linearis documents list
+
+# List documents selectively
+linearis documents list --project "Backend"
+linearis documents list --issue ABC-123
+
+# Read a document
+linearis documents read <document-id>
+
+# Update a document
+linearis documents update <document-id> --title "New Title" --content "Updated content"
+
+# Delete (trash) a document
+linearis documents delete <document-id>
+```
+
 ### Projects & Labels
 
 ```bash
@@ -234,6 +274,7 @@ I don't accept sponsoring in the "GitHub sponsorship" sense[^1] but [next to my 
 - [Ryan Rozich](https://github.com/ryanrozich)
 - [Chad Walters](https://github.com/chadrwalters)
 - [Louis Mandelstam](https://github.com/man8)
+- [Ralf Schimmel](https://github.com/ralfschimmel)
 
 ## Documentation
 
