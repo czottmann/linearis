@@ -15,6 +15,7 @@
  */
 
 import { program } from "commander";
+import pkg from "../package.json" with { type: "json" };
 import { setupCommentsCommands } from "./commands/comments.js";
 import { setupEmbedsCommands } from "./commands/embeds.js";
 import { setupIssuesCommands } from "./commands/issues.js";
@@ -31,7 +32,7 @@ import { outputUsageInfo } from "./utils/usage.js";
 program
   .name("linearis")
   .description("CLI for Linear.app with JSON output")
-  .version("2025.11.2")
+  .version(pkg.version)
   .option("--api-token <token>", "Linear API token");
 
 // Default action - show help when no subcommand
