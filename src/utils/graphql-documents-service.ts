@@ -6,7 +6,6 @@ import {
   GET_DOCUMENT_QUERY,
   LIST_DOCUMENTS_QUERY,
   DELETE_DOCUMENT_MUTATION,
-  LIST_DOCUMENTS_BY_IDS_QUERY,
 } from "../queries/documents.js";
 import {
   LinearDocument,
@@ -160,7 +159,7 @@ export class GraphQLDocumentsService {
 
     const result = await this.graphqlService.rawRequest<{
       documents: { nodes: Document[] };
-    }>(LIST_DOCUMENTS_BY_IDS_QUERY, {
+    }>(LIST_DOCUMENTS_QUERY, {
       first: limit ?? slugIds.length,
       filter,
     });

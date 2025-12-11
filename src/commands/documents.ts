@@ -50,7 +50,7 @@ interface DocumentListOptions {
  * @param url URL to parse
  * @returns Document slug ID if URL is a Linear document, null otherwise
  */
-function extractDocumentIdFromUrl(url: string): string | null {
+export function extractDocumentIdFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes("linear.app")) {
@@ -167,8 +167,7 @@ export function setupDocumentsCommands(program: Command): void {
                   ? attachError.message
                   : String(attachError);
               throw new Error(
-                `Document created (${document.id}) but failed to attach to issue "${options.attachTo}": ${errorMessage}. ` +
-                  `To retry attachment: linearis attachments create --issue "${options.attachTo}" --url "${document.url}" --title "${document.title}"`,
+                `Document created (${document.id}) but failed to attach to issue "${options.attachTo}": ${errorMessage}.`,
               );
             }
           }
@@ -234,7 +233,8 @@ export function setupDocumentsCommands(program: Command): void {
     .command("read <documentId>")
     .description("Read a document")
     .action(
-      handleAsyncCommand(async (documentId: string, _options: any, command: Command) => {
+      // Note: _options parameter is required by Commander.js signature (arg, options, command)
+      handleAsyncCommand(async (documentId: string, _options: unknown, command: Command) => {
         const rootOpts = command.parent!.parent!.opts();
         const documentsService = await createGraphQLDocumentsService(rootOpts);
 
@@ -338,8 +338,9 @@ export function setupDocumentsCommands(program: Command): void {
     .command("delete <documentId>")
     .description("Delete (trash) a document")
     .action(
+      // Note: _options parameter is required by Commander.js signature (arg, options, command)
       handleAsyncCommand(
-        async (documentId: string, _options: any, command: Command) => {
+        async (documentId: string, _options: unknown, command: Command) => {
           const rootOpts = command.parent!.parent!.opts();
           const documentsService = await createGraphQLDocumentsService(rootOpts);
 

@@ -92,17 +92,3 @@ export const DELETE_DOCUMENT_MUTATION = `
     }
   }
 `;
-
-/**
- * List documents filtered by IDs
- * Used for batch-fetching documents (e.g., documents attached to an issue)
- */
-export const LIST_DOCUMENTS_BY_IDS_QUERY = `
-  query ListDocumentsByIds($first: Int!, $filter: DocumentFilter!) {
-    documents(first: $first, filter: $filter) {
-      nodes {
-        ${DOCUMENT_FRAGMENT}
-      }
-    }
-  }
-`;
