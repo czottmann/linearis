@@ -67,8 +67,29 @@ export interface LinearIssue {
     createdAt: string;
     updatedAt: string;
   }>;
+  relations?: LinearIssueRelation[];
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Issue relation representing a link between two issues
+ * Types: blocks, duplicate, related, similar (similar is typically AI-generated)
+ */
+export interface LinearIssueRelation {
+  id: string;
+  type: "blocks" | "duplicate" | "related" | "similar";
+  issue: {
+    id: string;
+    identifier: string;
+    title: string;
+  };
+  relatedIssue: {
+    id: string;
+    identifier: string;
+    title: string;
+  };
+  createdAt: string;
 }
 
 export interface LinearProject {

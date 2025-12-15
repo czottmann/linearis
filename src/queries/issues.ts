@@ -10,6 +10,7 @@
 import {
   COMPLETE_ISSUE_FRAGMENT,
   COMPLETE_ISSUE_WITH_COMMENTS_FRAGMENT,
+  ISSUE_RELATIONS_FRAGMENT,
 } from "./common.js";
 
 /**
@@ -371,6 +372,92 @@ export const BATCH_RESOLVE_FOR_CREATE_QUERY = `
     }
 
     # Resolve cycles by name (team-scoped lookup is preferred but we also provide global fallback)
-    
+
+  }
+`;
+
+// ============================================================================
+// Issue Relations Queries and Mutations
+// ============================================================================
+
+/**
+ * Get issue relations by UUID
+ *
+ * Fetches all relations (both directions) for an issue by its UUID.
+ * Returns both outgoing relations and inverse/incoming relations.
+ */
+export const GET_ISSUE_RELATIONS_BY_ID_QUERY = `
+  query GetIssueRelationsById($id: String!) {
+    issue(id: $id) {
+      id
+      identifier
+      ${ISSUE_RELATIONS_FRAGMENT}
+    }
+  }
+`;
+
+/**
+ * Get issue relations by identifier (TEAM-123 format)
+ *
+ * Fetches all relations (both directions) for an issue using team key + number.
+ * Returns both outgoing relations and inverse/incoming relations.
+ */
+export const GET_ISSUE_RELATIONS_BY_IDENTIFIER_QUERY = `
+  query GetIssueRelationsByIdentifier($teamKey: String!, $number: Float!) {
+    issues(
+      filter: {
+        team: { key: { eq: $teamKey } }
+        number: { eq: $number }
+      }
+      first: 1
+    ) {
+      nodes {
+        id
+        identifier
+        ${ISSUE_RELATIONS_FRAGMENT}
+      }
+    }
+  }
+`;
+
+/**
+ * Create issue relation mutation
+ *
+ * Creates a new relation between two issues.
+ * Types: blocks, duplicate, related, similar
+ */
+export const CREATE_ISSUE_RELATION_MUTATION = `
+  mutation CreateIssueRelation($input: IssueRelationCreateInput!) {
+    issueRelationCreate(input: $input) {
+      success
+      issueRelation {
+        id
+        type
+        createdAt
+        issue {
+          id
+          identifier
+          title
+        }
+        relatedIssue {
+          id
+          identifier
+          title
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Delete issue relation mutation
+ *
+ * Removes an existing relation by its UUID.
+ */
+export const DELETE_ISSUE_RELATION_MUTATION = `
+  mutation DeleteIssueRelation($id: String!) {
+    issueRelationDelete(id: $id) {
+      success
+    }
   }
 `;

@@ -350,4 +350,169 @@ export function setupIssuesCommands(program: Command): void {
         },
       ),
     );
+
+  // ============================================================================
+  // Issue Relations Subcommand Group
+  // ============================================================================
+
+  /**
+   * Issues relations subcommand group
+   *
+   * Command: `linearis issues relations`
+   *
+   * Manages issue relationships including blocks, related, duplicate, and similar relations.
+   */
+  const relations = issues.command("relations")
+    .description("Issue relation operations");
+
+  // Show relations help when no subcommand
+  relations.action(() => {
+    relations.help();
+  });
+
+  /**
+   * List issue relations
+   *
+   * Command: `linearis issues relations list <issueId>`
+   *
+   * Lists all relations (both directions) for an issue.
+   */
+  relations.command("list <issueId>")
+    .description("List relations for an issue.")
+    .addHelpText(
+      "after",
+      `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.`,
+    )
+    .action(
+      handleAsyncCommand(
+        // Commander.js always passes (argument, options, command) to action handlers,
+        // even when no options are defined. The _options parameter cannot be removed.
+        async (issueId: string, _options: unknown, command: Command) => {
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
+          );
+
+          const result = await issuesService.getIssueRelations(issueId);
+          outputSuccess(result);
+        },
+      ),
+    );
+
+  /**
+   * Add issue relations
+   *
+   * Command: `linearis issues relations add <issueId> --blocks|--related|--duplicate|--similar <ids>`
+   *
+   * Adds one or more relations to an issue. Exactly one relation type flag must be specified.
+   * Supports comma-separated IDs for adding multiple relations at once.
+   */
+  relations.command("add <issueId>")
+    .description("Add relation(s) to an issue.")
+    .addHelpText(
+      "after",
+      `\nWhen passing issue IDs, both UUID and identifiers like ABC-123 are supported.
+
+Examples:
+  linearis issues relations add ABC-123 --blocks DEF-456
+  linearis issues relations add ABC-123 --related DEF-456,DEF-789
+  linearis issues relations add ABC-123 --duplicate DEF-456
+  linearis issues relations add ABC-123 --similar DEF-456`,
+    )
+    .option("--blocks <ids>", "issues this issue blocks (comma-separated)")
+    .option("--related <ids>", "related issues (comma-separated)")
+    .option("--duplicate <ids>", "issues this is a duplicate of (comma-separated)")
+    .option("--similar <ids>", "similar issues (comma-separated, note: typically AI-generated)")
+    .action(
+      handleAsyncCommand(
+        async (issueId: string, options: any, command: Command) => {
+          // Validate exactly one relation type is specified
+          const typeFlags = [
+            options.blocks ? "blocks" : null,
+            options.related ? "related" : null,
+            options.duplicate ? "duplicate" : null,
+            options.similar ? "similar" : null,
+          ].filter(Boolean);
+
+          if (typeFlags.length === 0) {
+            throw new Error(
+              "Must specify one of --blocks, --related, --duplicate, or --similar",
+            );
+          }
+          if (typeFlags.length > 1) {
+            throw new Error(
+              "Cannot specify multiple relation types. Use separate commands.",
+            );
+          }
+
+          const relationType = typeFlags[0] as
+            | "blocks"
+            | "related"
+            | "duplicate"
+            | "similar";
+          const relatedIds = (options[relationType] as string)
+            .split(",")
+            .map((id: string) => id.trim())
+            .filter((id: string) => id.length > 0);
+
+          if (relatedIds.length === 0) {
+            throw new Error("At least one related issue ID must be provided");
+          }
+
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
+          );
+
+          const result = await issuesService.addIssueRelations(
+            issueId,
+            relatedIds,
+            relationType,
+          );
+          outputSuccess(result);
+        },
+      ),
+    );
+
+  /**
+   * Remove an issue relation
+   *
+   * Command: `linearis issues relations remove <relationId>`
+   *
+   * Removes a specific relation by its UUID.
+   * Use `relations list` to find relation IDs.
+   */
+  relations.command("remove <relationId>")
+    .description("Remove a relation.")
+    .addHelpText(
+      "after",
+      `\nThe relationId must be a UUID. Use 'issues relations list' to find relation IDs.`,
+    )
+    .action(
+      handleAsyncCommand(
+        // Commander.js always passes (argument, options, command) to action handlers,
+        // even when no options are defined. The _options parameter cannot be removed.
+        async (relationId: string, _options: unknown, command: Command) => {
+          const [graphQLService, linearService] = await Promise.all([
+            createGraphQLService(command.parent!.parent!.parent!.opts()),
+            createLinearService(command.parent!.parent!.parent!.opts()),
+          ]);
+          const issuesService = new GraphQLIssuesService(
+            graphQLService,
+            linearService,
+          );
+
+          const result = await issuesService.removeIssueRelation(relationId);
+          outputSuccess(result);
+        },
+      ),
+    );
 }
