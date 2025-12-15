@@ -5,9 +5,13 @@ import {
   BATCH_RESOLVE_FOR_SEARCH_QUERY,
   BATCH_RESOLVE_FOR_UPDATE_QUERY,
   CREATE_ISSUE_MUTATION,
+  CREATE_ISSUE_RELATION_MUTATION,
+  DELETE_ISSUE_RELATION_MUTATION,
   FILTERED_SEARCH_ISSUES_QUERY,
   GET_ISSUE_BY_ID_QUERY,
   GET_ISSUE_BY_IDENTIFIER_QUERY,
+  GET_ISSUE_RELATIONS_BY_ID_QUERY,
+  GET_ISSUE_RELATIONS_BY_IDENTIFIER_QUERY,
   GET_ISSUES_QUERY,
   SEARCH_ISSUES_QUERY,
   UPDATE_ISSUE_MUTATION,
@@ -15,6 +19,7 @@ import {
 import type {
   CreateIssueArgs,
   LinearIssue,
+  LinearIssueRelation,
   SearchIssuesArgs,
   UpdateIssueArgs,
 } from "./linear-types.js";
@@ -896,6 +901,7 @@ export class GraphQLIssuesService {
             ? new Date(comment.updatedAt).toISOString()
             : new Date().toISOString()),
       })) || [],
+      relations: this.transformRelationsData(issue),
       createdAt: issue.createdAt instanceof Date
         ? issue.createdAt.toISOString()
         : (issue.createdAt
@@ -907,5 +913,231 @@ export class GraphQLIssuesService {
           ? new Date(issue.updatedAt).toISOString()
           : new Date().toISOString()),
     };
+  }
+
+  /**
+   * Transform relations data from issue response
+   * Combines both outgoing relations and inverse relations
+   */
+  private transformRelationsData(issue: any): LinearIssueRelation[] | undefined {
+    if (!issue.relations?.nodes && !issue.inverseRelations?.nodes) {
+      return undefined;
+    }
+
+    const relations: LinearIssueRelation[] = [];
+
+    // Process outgoing relations (this issue -> related issue)
+    if (issue.relations?.nodes) {
+      for (const rel of issue.relations.nodes) {
+        relations.push(this.transformSingleRelation(rel));
+      }
+    }
+
+    // Process inverse relations (other issue -> this issue)
+    if (issue.inverseRelations?.nodes) {
+      for (const rel of issue.inverseRelations.nodes) {
+        relations.push(this.transformSingleRelation(rel));
+      }
+    }
+
+    return relations.length > 0 ? relations : undefined;
+  }
+
+  /**
+   * Transform a single relation from GraphQL response
+   */
+  private transformSingleRelation(relation: any): LinearIssueRelation {
+    // Validate required nested objects exist
+    if (!relation.issue || !relation.relatedIssue) {
+      throw new Error(
+        `Invalid relation data: missing ${!relation.issue ? "issue" : "relatedIssue"} field`,
+      );
+    }
+
+    return {
+      id: relation.id,
+      type: relation.type,
+      issue: {
+        id: relation.issue.id,
+        identifier: relation.issue.identifier,
+        title: relation.issue.title,
+      },
+      relatedIssue: {
+        id: relation.relatedIssue.id,
+        identifier: relation.relatedIssue.identifier,
+        title: relation.relatedIssue.title,
+      },
+      createdAt: relation.createdAt instanceof Date
+        ? relation.createdAt.toISOString()
+        : (relation.createdAt
+          ? new Date(relation.createdAt).toISOString()
+          : new Date().toISOString()),
+    };
+  }
+
+  // ============================================================================
+  // Issue Relations Methods
+  // ============================================================================
+
+  /**
+   * Get relations for an issue
+   *
+   * @param issueId - Either a UUID string or TEAM-123 format identifier
+   * @returns Object with issue info and relations array
+   */
+  async getIssueRelations(issueId: string): Promise<{
+    issueId: string;
+    identifier: string;
+    relations: LinearIssueRelation[];
+  }> {
+    let issueData;
+
+    if (isUuid(issueId)) {
+      const result = await this.graphQLService.rawRequest(
+        GET_ISSUE_RELATIONS_BY_ID_QUERY,
+        { id: issueId },
+      );
+      if (!result.issue) {
+        throw new Error(`Issue with ID "${issueId}" not found`);
+      }
+      issueData = result.issue;
+    } else {
+      const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
+      const result = await this.graphQLService.rawRequest(
+        GET_ISSUE_RELATIONS_BY_IDENTIFIER_QUERY,
+        { teamKey, number: issueNumber },
+      );
+      if (!result.issues.nodes.length) {
+        throw new Error(`Issue with identifier "${issueId}" not found`);
+      }
+      issueData = result.issues.nodes[0];
+    }
+
+    const relations = this.transformRelationsData(issueData) || [];
+
+    return {
+      issueId: issueData.id,
+      identifier: issueData.identifier,
+      relations,
+    };
+  }
+
+  /**
+   * Add relations to an issue
+   *
+   * @param issueId - Source issue (UUID or TEAM-123)
+   * @param relatedIssueIds - Target issues (UUIDs or TEAM-123 identifiers)
+   * @param type - Relation type (blocks, duplicate, related, similar)
+   * @returns Array of created relations
+   */
+  async addIssueRelations(
+    issueId: string,
+    relatedIssueIds: string[],
+    type: "blocks" | "duplicate" | "related" | "similar",
+  ): Promise<LinearIssueRelation[]> {
+    // Step 1: Resolve source issue ID
+    const resolvedSourceId = await this.resolveIssueIdForRelation(issueId);
+
+    // Step 2: Resolve all target issue IDs
+    const resolvedTargetIds = await this.resolveIssueIds(relatedIssueIds);
+
+    // Step 3: Create relations sequentially (API doesn't support batch creation)
+    const createdRelations: LinearIssueRelation[] = [];
+    for (const targetId of resolvedTargetIds) {
+      const result = await this.graphQLService.rawRequest(
+        CREATE_ISSUE_RELATION_MUTATION,
+        {
+          input: {
+            issueId: resolvedSourceId,
+            relatedIssueId: targetId,
+            type: type,
+          },
+        },
+      );
+
+      if (!result.issueRelationCreate.success) {
+        // Report partial success if some relations were created before failure
+        const partialInfo = createdRelations.length > 0
+          ? ` (${createdRelations.length} relation(s) were created before this failure)`
+          : "";
+        throw new Error(
+          `Failed to create relation to issue ${targetId}${partialInfo}`,
+        );
+      }
+
+      createdRelations.push(
+        this.transformSingleRelation(result.issueRelationCreate.issueRelation),
+      );
+    }
+
+    return createdRelations;
+  }
+
+  /**
+   * Remove an issue relation
+   *
+   * @param relationId - The relation UUID to delete
+   */
+  async removeIssueRelation(relationId: string): Promise<{ success: boolean }> {
+    // Validate that relationId is a valid UUID
+    if (!isUuid(relationId)) {
+      throw new Error(
+        `Invalid relation ID "${relationId}": must be a valid UUID. ` +
+          `Use 'issues relations list' to find relation IDs.`,
+      );
+    }
+
+    const result = await this.graphQLService.rawRequest(
+      DELETE_ISSUE_RELATION_MUTATION,
+      { id: relationId },
+    );
+
+    if (!result.issueRelationDelete.success) {
+      throw new Error(`Failed to delete relation ${relationId}`);
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Resolve a single issue ID (for relation operations)
+   */
+  private async resolveIssueIdForRelation(issueId: string): Promise<string> {
+    if (isUuid(issueId)) {
+      return issueId;
+    }
+
+    const { teamKey, issueNumber } = parseIssueIdentifier(issueId);
+    const result = await this.graphQLService.rawRequest(
+      GET_ISSUE_BY_IDENTIFIER_QUERY,
+      { teamKey, number: issueNumber },
+    );
+
+    if (!result.issues.nodes.length) {
+      throw new Error(`Issue with identifier "${issueId}" not found`);
+    }
+
+    return result.issues.nodes[0].id;
+  }
+
+  /**
+   * Resolve multiple issue IDs
+   * UUIDs pass through, identifiers are resolved via API
+   */
+  private async resolveIssueIds(issueIds: string[]): Promise<string[]> {
+    const results: string[] = [];
+
+    for (const id of issueIds) {
+      const trimmedId = id.trim();
+      if (isUuid(trimmedId)) {
+        results.push(trimmedId);
+      } else {
+        // Resolve identifier
+        const resolved = await this.resolveIssueIdForRelation(trimmedId);
+        results.push(resolved);
+      }
+    }
+
+    return results;
   }
 }

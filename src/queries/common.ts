@@ -142,6 +142,49 @@ export const ISSUE_CHILDREN_FRAGMENT = `
 `;
 
 /**
+ * Issue relations fragment
+ * Provides both outgoing relations (this issue -> related) and
+ * incoming/inverse relations (other issue -> this issue)
+ * Types: blocks, duplicate, related, similar
+ */
+export const ISSUE_RELATIONS_FRAGMENT = `
+  relations {
+    nodes {
+      id
+      type
+      createdAt
+      issue {
+        id
+        identifier
+        title
+      }
+      relatedIssue {
+        id
+        identifier
+        title
+      }
+    }
+  }
+  inverseRelations {
+    nodes {
+      id
+      type
+      createdAt
+      issue {
+        id
+        identifier
+        title
+      }
+      relatedIssue {
+        id
+        identifier
+        title
+      }
+    }
+  }
+`;
+
+/**
  * Complete issue fragment with all relationships
  *
  * Combines all issue fragments into a comprehensive field selection.
@@ -162,9 +205,10 @@ export const COMPLETE_ISSUE_FRAGMENT = `
 `;
 
 /**
- * Complete issue fragment including comments
+ * Complete issue fragment including comments and relations
  */
 export const COMPLETE_ISSUE_WITH_COMMENTS_FRAGMENT = `
   ${COMPLETE_ISSUE_FRAGMENT}
   ${ISSUE_COMMENTS_FRAGMENT}
+  ${ISSUE_RELATIONS_FRAGMENT}
 `;
