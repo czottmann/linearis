@@ -328,3 +328,53 @@ export interface AttachmentCreateInput {
   commentBody?: string;
   iconUrl?: string;
 }
+
+export interface LinearInitiative {
+  id: string;
+  name: string;
+  description?: string;
+  content?: string; // Full body content in markdown format
+  status: "Planned" | "Active" | "Completed";
+  health?: "onTrack" | "atRisk" | "offTrack";
+  targetDate?: string;
+  owner?: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  projects?: Array<{
+    id: string;
+    name: string;
+    state: string;
+    progress: number;
+  }>;
+  parentInitiative?: {
+    id: string;
+    name: string;
+  };
+  subInitiatives?: Array<{
+    id: string;
+    name: string;
+    status: "Planned" | "Active" | "Completed";
+  }>;
+}
+
+export interface InitiativeListOptions {
+  status?: string;
+  owner?: string;
+  limit?: string;
+}
+
+export interface InitiativeReadOptions {
+  projectsFirst?: string;
+}
+
+export interface InitiativeUpdateOptions {
+  name?: string;
+  description?: string;
+  content?: string;
+  status?: string;
+  owner?: string;
+  targetDate?: string;
+}

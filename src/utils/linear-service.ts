@@ -3,6 +3,7 @@ import { CommandOptions, getApiToken } from "./auth.js";
 import {
   CreateCommentArgs,
   LinearComment,
+  LinearInitiative,
   LinearIssue,
   LinearLabel,
   LinearProject,
@@ -686,6 +687,222 @@ export class LinearService {
     }
 
     return projectsConnection.nodes[0].id;
+  }
+
+  /**
+   * Get all initiatives
+   *
+   * @param statusFilter - Optional status filter (Planned/Active/Completed)
+   * @param ownerFilter - Optional owner ID filter
+   * @param limit - Maximum initiatives to fetch (default 50)
+   * @returns Array of initiatives with owner information
+   */
+  async getInitiatives(
+    statusFilter?: string,
+    ownerFilter?: string,
+    limit: number = 50,
+  ): Promise<LinearInitiative[]> {
+    const filter: any = {};
+
+    if (statusFilter) {
+      filter.status = { eq: statusFilter };
+    }
+
+    if (ownerFilter) {
+      filter.owner = { id: { eq: ownerFilter } };
+    }
+
+    const initiativesConnection = await this.client.initiatives({
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      first: limit,
+    });
+
+    // Fetch owner relationship in parallel for all initiatives
+    const initiativesWithData = await Promise.all(
+      initiativesConnection.nodes.map(async (initiative) => {
+        const owner = await initiative.owner;
+        return {
+          id: initiative.id,
+          name: initiative.name,
+          description: initiative.description || undefined,
+          content: initiative.content || undefined,
+          status: initiative.status as "Planned" | "Active" | "Completed",
+          health: initiative.health as
+            | "onTrack"
+            | "atRisk"
+            | "offTrack"
+            | undefined,
+          targetDate: initiative.targetDate
+            ? new Date(initiative.targetDate).toISOString()
+            : undefined,
+          owner: owner
+            ? {
+                id: owner.id,
+                name: owner.name,
+              }
+            : undefined,
+          createdAt: initiative.createdAt
+            ? new Date(initiative.createdAt).toISOString()
+            : new Date().toISOString(),
+          updatedAt: initiative.updatedAt
+            ? new Date(initiative.updatedAt).toISOString()
+            : new Date().toISOString(),
+        };
+      }),
+    );
+
+    return initiativesWithData;
+  }
+
+  /**
+   * Get single initiative by ID with projects and sub-initiatives
+   *
+   * @param initiativeId - Initiative UUID
+   * @param projectsLimit - Maximum projects to fetch (default 50)
+   * @returns Initiative with projects and sub-initiatives
+   */
+  async getInitiativeById(
+    initiativeId: string,
+    projectsLimit: number = 50,
+  ): Promise<LinearInitiative> {
+    const initiative = await this.client.initiative(initiativeId);
+
+    const [
+      owner,
+      projectsConnection,
+      parentInitiative,
+      subInitiativesConnection,
+    ] = await Promise.all([
+      initiative.owner,
+      initiative.projects({ first: projectsLimit }),
+      initiative.parentInitiative,
+      initiative.subInitiatives({ first: 50 }),
+    ]);
+
+    // Map projects with basic info
+    const projects = projectsConnection.nodes.map((project) => ({
+      id: project.id,
+      name: project.name,
+      state: project.state,
+      progress: project.progress,
+    }));
+
+    // Map sub-initiatives
+    const subInitiatives = subInitiativesConnection.nodes.map((sub) => ({
+      id: sub.id,
+      name: sub.name,
+      status: sub.status as "Planned" | "Active" | "Completed",
+    }));
+
+    return {
+      id: initiative.id,
+      name: initiative.name,
+      description: initiative.description || undefined,
+      content: initiative.content || undefined,
+      status: initiative.status as "Planned" | "Active" | "Completed",
+      health: initiative.health as
+        | "onTrack"
+        | "atRisk"
+        | "offTrack"
+        | undefined,
+      targetDate: initiative.targetDate
+        ? new Date(initiative.targetDate).toISOString()
+        : undefined,
+      owner: owner
+        ? {
+            id: owner.id,
+            name: owner.name,
+          }
+        : undefined,
+      createdAt: initiative.createdAt
+        ? new Date(initiative.createdAt).toISOString()
+        : new Date().toISOString(),
+      updatedAt: initiative.updatedAt
+        ? new Date(initiative.updatedAt).toISOString()
+        : new Date().toISOString(),
+      projects: projects.length > 0 ? projects : undefined,
+      parentInitiative: parentInitiative
+        ? {
+            id: parentInitiative.id,
+            name: parentInitiative.name,
+          }
+        : undefined,
+      subInitiatives: subInitiatives.length > 0 ? subInitiatives : undefined,
+    };
+  }
+
+  /**
+   * Resolve initiative by name or ID
+   *
+   * @param initiativeNameOrId - Initiative name or UUID
+   * @returns Initiative UUID
+   * @throws Error if initiative not found or multiple matches
+   */
+  async resolveInitiativeId(initiativeNameOrId: string): Promise<string> {
+    // Return UUID as-is
+    if (isUuid(initiativeNameOrId)) {
+      return initiativeNameOrId;
+    }
+
+    // Search by name (case-insensitive)
+    const initiativesConnection = await this.client.initiatives({
+      filter: { name: { eqIgnoreCase: initiativeNameOrId } },
+      first: 10,
+    });
+
+    const nodes = initiativesConnection.nodes;
+
+    if (nodes.length === 0) {
+      throw notFoundError("Initiative", initiativeNameOrId);
+    }
+
+    if (nodes.length === 1) {
+      return nodes[0].id;
+    }
+
+    // Multiple matches - prefer Active, then Planned
+    let chosen = nodes.find((n) => n.status === "Active");
+    if (!chosen) chosen = nodes.find((n) => n.status === "Planned");
+    if (!chosen) chosen = nodes[0];
+
+    return chosen.id;
+  }
+
+  /**
+   * Update an initiative
+   *
+   * @param initiativeId - Initiative UUID
+   * @param updates - Fields to update
+   * @returns Updated initiative
+   */
+  async updateInitiative(
+    initiativeId: string,
+    updates: {
+      name?: string;
+      description?: string;
+      content?: string;
+      status?: "Planned" | "Active" | "Completed";
+      ownerId?: string;
+      targetDate?: string;
+    },
+  ): Promise<LinearInitiative> {
+    // Build update input with only provided fields
+    const input: Record<string, any> = {};
+    if (updates.name !== undefined) input.name = updates.name;
+    if (updates.description !== undefined) input.description = updates.description;
+    if (updates.content !== undefined) input.content = updates.content;
+    if (updates.status !== undefined) input.status = updates.status;
+    if (updates.ownerId !== undefined) input.ownerId = updates.ownerId;
+    if (updates.targetDate !== undefined) input.targetDate = updates.targetDate;
+
+    const payload = await this.client.updateInitiative(initiativeId, input);
+
+    if (!payload.success) {
+      throw new Error("Failed to update initiative");
+    }
+
+    // Re-fetch to get complete data
+    return this.getInitiativeById(initiativeId);
   }
 }
 
