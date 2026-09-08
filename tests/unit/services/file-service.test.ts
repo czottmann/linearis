@@ -50,7 +50,17 @@ describe("downloadFile", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("downloads file successfully", async () => {
+  it.each([
+    ["personal API key", TEST_TOKEN, TEST_TOKEN, ""],
+    ["OAuth token", "oauth_test_token", "Bearer oauth_test_token", ""],
+    ["signed URL with API key", TEST_TOKEN, undefined, "?signature=test"],
+    [
+      "signed URL with OAuth token",
+      "oauth_test_token",
+      undefined,
+      "?signature=test",
+    ],
+  ])("downloads with %s", async (_name, token, authorization, query) => {
     vi.mocked(isLinearUploadUrl).mockReturnValue(true);
     vi.mocked(extractFilenameFromUrl).mockReturnValue("image.png");
     vi.mocked(access).mockRejectedValue(new Error("ENOENT")); // file doesn't exist
@@ -64,20 +74,19 @@ describe("downloadFile", () => {
       arrayBuffer: () => Promise.resolve(fileContent),
     });
 
-    const service = new FileService(TEST_TOKEN);
-    const result = await service.downloadFile(
-      "https://uploads.linear.app/org/file.png",
-    );
+    const service = new FileService(token);
+    const url = `https://uploads.linear.app/org/file.png${query}`;
+    const result = await service.downloadFile(url);
 
     expect(result).toEqual({
       success: true,
       filePath: "image.png",
     });
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://uploads.linear.app/org/file.png",
+      url,
       expect.objectContaining({
         method: "GET",
-        headers: { Authorization: `Bearer ${TEST_TOKEN}` },
+        headers: authorization ? { Authorization: authorization } : {},
       }),
     );
     expect(writeFile).toHaveBeenCalled();
