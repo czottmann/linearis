@@ -1,3 +1,10 @@
+## [2026.9.0-next.1](https://github.com/linearis-oss/linearis/compare/v2026.8.0...v2026.9.0-next.1) (2026-09-09)
+
+### Bug Fixes
+
+* **files:** authenticate private downloads with personal API keys ([895588c](https://github.com/linearis-oss/linearis/commit/895588c94377c4f1cdcba9134448eed8a54e622d)), closes [#300](https://github.com/linearis-oss/linearis/issues/300)
+* **files:** forward download credentials verbatim ([fa86ebb](https://github.com/linearis-oss/linearis/commit/fa86ebbb067c1dc9703e56b1cc104099771c42ad)), closes [#300](https://github.com/linearis-oss/linearis/issues/300)
+
 ## [2026.8.0](https://github.com/linearis-oss/linearis/compare/v2026.7.0...v2026.8.0) (2026-08-14)
 
 ### ⚠ BREAKING CHANGES
