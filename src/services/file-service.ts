@@ -194,10 +194,7 @@ export class FileService {
 
       const headers: Record<string, string> = {};
       if (!isSignedUrl) {
-        // Personal API keys use raw authorization; OAuth tokens use Bearer.
-        headers["Authorization"] = this.apiToken.startsWith("lin_api_")
-          ? this.apiToken
-          : `Bearer ${this.apiToken}`;
+        headers["Authorization"] = this.apiToken;
       }
 
       const response = await fetch(url, {
